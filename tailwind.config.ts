@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				mining: {
+					primary: '#8B5CF6',
+					secondary: '#7c3aed',
+					copper: '#D47516',
+					gold: '#F59E0B',
+					silver: '#6B7280',
+					cobalt: '#3B82F6',
+					manganese: '#A855F7',
+					light: '#E5DEFF',
 				}
 			},
 			borderRadius: {
