@@ -1,12 +1,16 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const Home: React.FC = () => {
-  // Sample project data
-  const projects: ProjectData[] = [
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const navigate = useNavigate();
+  
+  // Sample base projects
+  const baseProjects: ProjectData[] = [
     {
       id: '1',
       name: 'Copper Mountain Exploration',
@@ -45,11 +49,26 @@ const Home: React.FC = () => {
     },
   ];
 
+  // Load projects from localStorage on initial load
+  useEffect(() => {
+    const savedProjects = localStorage.getItem('explorationProjects');
+    if (savedProjects) {
+      const parsedProjects = JSON.parse(savedProjects);
+      setProjects([...baseProjects, ...parsedProjects]);
+    } else {
+      setProjects(baseProjects);
+    }
+  }, []);
+
+  const handleAddProject = () => {
+    navigate('/drilling-cost-estimator');
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Exploration Projects</h1>
-        <Button className="bg-mining-primary hover:bg-mining-secondary">
+        <Button className="bg-mining-primary hover:bg-mining-secondary" onClick={handleAddProject}>
           <Plus className="mr-2 h-4 w-4" /> Add Project
         </Button>
       </div>

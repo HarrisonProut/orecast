@@ -22,32 +22,34 @@ type SearchHistoryItem = {
   longitude: string;
   depth: string;
   timestamp: Date;
+  locationDetails: LocationDetails;
+  costData: { name: string; cost: number; }[];
+  costRange: string;
 };
 
 type LocationDetails = {
   name: string;
   country: string;
-  terrain: string;
   rockType: string;
   confidenceRating: number;
 };
 
 const randomLocations = [
-  { name: 'Nevada', country: 'United States', terrain: 'Desert', rockType: 'Igneous', confidenceRating: 8 },
-  { name: 'Queensland', country: 'Australia', terrain: 'Outback', rockType: 'Sedimentary', confidenceRating: 7 },
-  { name: 'British Columbia', country: 'Canada', terrain: 'Mountain', rockType: 'Metamorphic', confidenceRating: 9 },
-  { name: 'Atacama Desert', country: 'Chile', terrain: 'Desert', rockType: 'Volcanic', confidenceRating: 6 },
-  { name: 'Gauteng', country: 'South Africa', terrain: 'Plateau', rockType: 'Granite', confidenceRating: 8 },
-  { name: 'Siberia', country: 'Russia', terrain: 'Tundra', rockType: 'Crystalline', confidenceRating: 5 },
-  { name: 'Minas Gerais', country: 'Brazil', terrain: 'Highland', rockType: 'Schist', confidenceRating: 7 },
-  { name: 'Yunnan Province', country: 'China', terrain: 'Mountain', rockType: 'Limestone', confidenceRating: 6 },
-  { name: 'Cornwall', country: 'United Kingdom', terrain: 'Coastal', rockType: 'Granite', confidenceRating: 9 },
-  { name: 'Western Australia', country: 'Australia', terrain: 'Arid', rockType: 'Ironstone', confidenceRating: 7 },
-  { name: 'London', country: 'United Kingdom', terrain: 'Urban', rockType: 'Clay', confidenceRating: 8 },
-  { name: 'Alberta', country: 'Canada', terrain: 'Prairie', rockType: 'Sedimentary', confidenceRating: 7 },
-  { name: 'Arizona', country: 'United States', terrain: 'Desert', rockType: 'Sandstone', confidenceRating: 9 },
-  { name: 'Osaka', country: 'Japan', terrain: 'Coastal', rockType: 'Basalt', confidenceRating: 6 },
-  { name: 'Bavaria', country: 'Germany', terrain: 'Forest', rockType: 'Limestone', confidenceRating: 8 },
+  { name: 'Nevada', country: 'United States', rockType: 'Igneous', confidenceRating: 8 },
+  { name: 'Queensland', country: 'Australia', rockType: 'Sedimentary', confidenceRating: 7 },
+  { name: 'British Columbia', country: 'Canada', rockType: 'Metamorphic', confidenceRating: 9 },
+  { name: 'Atacama Desert', country: 'Chile', rockType: 'Volcanic', confidenceRating: 6 },
+  { name: 'Gauteng', country: 'South Africa', rockType: 'Granite', confidenceRating: 8 },
+  { name: 'Siberia', country: 'Russia', rockType: 'Crystalline', confidenceRating: 5 },
+  { name: 'Minas Gerais', country: 'Brazil', rockType: 'Schist', confidenceRating: 7 },
+  { name: 'Yunnan Province', country: 'China', rockType: 'Limestone', confidenceRating: 6 },
+  { name: 'Cornwall', country: 'United Kingdom', rockType: 'Granite', confidenceRating: 9 },
+  { name: 'Western Australia', country: 'Australia', rockType: 'Ironstone', confidenceRating: 7 },
+  { name: 'London', country: 'United Kingdom', rockType: 'Clay', confidenceRating: 8 },
+  { name: 'Alberta', country: 'Canada', rockType: 'Sedimentary', confidenceRating: 7 },
+  { name: 'Arizona', country: 'United States', rockType: 'Sandstone', confidenceRating: 9 },
+  { name: 'Osaka', country: 'Japan', rockType: 'Basalt', confidenceRating: 6 },
+  { name: 'Bavaria', country: 'Germany', rockType: 'Limestone', confidenceRating: 8 },
 ];
 
 const DrillingCostEstimator: React.FC = () => {
@@ -60,6 +62,8 @@ const DrillingCostEstimator: React.FC = () => {
   const [editingName, setEditingName] = useState<string>('');
   const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null);
   const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
+  const [costData, setCostData] = useState<{ name: string; cost: number; }[]>([]);
+  const [costRange, setCostRange] = useState<string>('');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -74,16 +78,42 @@ const DrillingCostEstimator: React.FC = () => {
     return randomLocations[randomIndex];
   };
 
+  const calculateCosts = (baseDepth: number) => {
+    // Add some randomness to make costs different each time
+    const randomFactor = 0.7 + (Math.random() * 0.6); // between 0.7 and 1.3
+    const depthValue = parseFloat(depth) || 250;
+      
+    const averageCost = Math.round(baseDepth * depthValue * randomFactor);
+    const conservativeCost = Math.round(averageCost * (1.2 + Math.random() * 0.2)); // 1.2-1.4x
+    const ambitiousCost = Math.round(averageCost * (0.7 + Math.random() * 0.1)); // 0.7-0.8x
+    
+    return [
+      { name: 'Ambitious', cost: ambitiousCost },
+      { name: 'Average', cost: averageCost },
+      { name: 'Conservative', cost: conservativeCost }
+    ];
+  };
+
   const handleCalculate = () => {
     // Generate random location details when calculating
     const randomLocation = getRandomLocation();
-    setLocationDetails({
+    const newLocationDetails = {
       name: randomLocation.name,
       country: randomLocation.country,
-      terrain: randomLocation.terrain,
       rockType: randomLocation.rockType,
       confidenceRating: randomLocation.confidenceRating
-    });
+    };
+    
+    setLocationDetails(newLocationDetails);
+    
+    // Calculate costs with randomness
+    const newCostData = calculateCosts(720);
+    setCostData(newCostData);
+    
+    const minCost = Math.min(...newCostData.map(d => d.cost));
+    const maxCost = Math.max(...newCostData.map(d => d.cost));
+    const newCostRange = `$${minCost.toLocaleString()} - $${maxCost.toLocaleString()}`;
+    setCostRange(newCostRange);
 
     // Add to search history
     const newItem: SearchHistoryItem = {
@@ -93,6 +123,9 @@ const DrillingCostEstimator: React.FC = () => {
       longitude,
       depth,
       timestamp: new Date(),
+      locationDetails: newLocationDetails,
+      costData: newCostData,
+      costRange: newCostRange
     };
     
     setSearchHistory([...searchHistory, newItem]);
@@ -105,6 +138,7 @@ const DrillingCostEstimator: React.FC = () => {
       const coords = generateRandomCoordinates();
       setLatitude(coords.lat);
       setLongitude(coords.lng);
+      setDepth((Math.random() * 300 + 100).toFixed(0));
       handleCalculate();
     }
   };
@@ -128,18 +162,10 @@ const DrillingCostEstimator: React.FC = () => {
     setLatitude(item.latitude);
     setLongitude(item.longitude);
     setDepth(item.depth);
+    setLocationDetails(item.locationDetails);
+    setCostData(item.costData);
+    setCostRange(item.costRange);
     setActiveSiteId(item.id);
-    
-    // Find the location based on coordinates (this is a simplified version)
-    const randomLocation = getRandomLocation();
-    setLocationDetails({
-      name: randomLocation.name,
-      country: randomLocation.country,
-      terrain: randomLocation.terrain,
-      rockType: randomLocation.rockType,
-      confidenceRating: randomLocation.confidenceRating
-    });
-    
     setShowEstimation(true);
   };
 
@@ -178,8 +204,23 @@ const DrillingCostEstimator: React.FC = () => {
         minerals = ['Cobalt'];
     }
     
-    // We'd typically save this to a database
-    // For now we'll just show a success message
+    // Create a new project object
+    const newProject = {
+      id: `proj-${Date.now()}`,
+      name: activeSite.name,
+      location: locationDetails.name,
+      country: locationDetails.country,
+      npv,
+      minerals,
+      createdDate: new Date().toISOString().split('T')[0],
+    };
+    
+    // Save to localStorage
+    const existingProjects = localStorage.getItem('explorationProjects');
+    let projectsArray = existingProjects ? JSON.parse(existingProjects) : [];
+    projectsArray = [...projectsArray, newProject];
+    localStorage.setItem('explorationProjects', JSON.stringify(projectsArray));
+    
     toast({
       title: "Project Saved",
       description: `${activeSite.name} has been added to your exploration projects.`,
@@ -188,27 +229,6 @@ const DrillingCostEstimator: React.FC = () => {
     // Navigate to home
     navigate('/');
   };
-
-  const calculateCosts = (baseDepth: number) => {
-    const depth = parseFloat(activeSiteId ? 
-      searchHistory.find(item => item.id === activeSiteId)?.depth || '250' : 
-      '250');
-      
-    const averageCost = baseDepth * depth;
-    const conservativeCost = averageCost * 1.3;
-    const ambitiousCost = averageCost * 0.8;
-    
-    return [
-      { name: 'Conservative', cost: Math.round(conservativeCost) },
-      { name: 'Average', cost: Math.round(averageCost) },
-      { name: 'Ambitious', cost: Math.round(ambitiousCost) }
-    ];
-  };
-
-  const costData = calculateCosts(720);
-  const minCost = Math.min(...costData.map(d => d.cost));
-  const maxCost = Math.max(...costData.map(d => d.cost));
-  const costRange = `$${minCost.toLocaleString()} - $${maxCost.toLocaleString()}`;
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -308,9 +328,11 @@ const DrillingCostEstimator: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => saveToProjects()}
+                              onClick={() => {
+                                loadSite(item);
+                                saveToProjects();
+                              }}
                               className="h-6 w-6 p-0"
-                              disabled={activeSiteId !== item.id}
                             >
                               <Save className="h-3 w-3" />
                             </Button>
@@ -332,11 +354,9 @@ const DrillingCostEstimator: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4">Location Map</h2>
           {showEstimation ? (
             <>
-              <div className="bg-gray-100 rounded-md h-80 flex items-center justify-center">
+              <div className="bg-[url('https://api.mapbox.com/styles/v1/mapbox/light-v10/static/0,0,1,0/800x400?access_token=pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xneng1Mmp4MHRkYzNpcXl5ZDZ6Y2lyNSJ9.3jkU624v1hwRIm46HJbHMw')] rounded-md h-80 flex items-center justify-center bg-cover">
                 <div className="flex flex-col items-center justify-center">
                   <MapPin className="h-10 w-10 text-mining-primary mb-2" />
-                  <p className="text-gray-700">{locationDetails?.name}, {locationDetails?.country}</p>
-                  <p className="text-gray-500 text-sm">Lat: {latitude}, Long: {longitude}</p>
                 </div>
               </div>
               
@@ -348,8 +368,8 @@ const DrillingCostEstimator: React.FC = () => {
                       <p className="font-medium">{locationDetails.name}, {locationDetails.country}</p>
                     </div>
                     <div>
-                      <h4 className="font-medium text-sm text-gray-500">Terrain</h4>
-                      <p className="font-medium">{locationDetails.terrain}</p>
+                      <h4 className="font-medium text-sm text-gray-500">Coordinates</h4>
+                      <p className="font-medium">Lat: {latitude}, Long: {longitude}</p>
                     </div>
                   </div>
                 )}
