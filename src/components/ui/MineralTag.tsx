@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-
-type MineralType = 'Copper' | 'Gold' | 'Silver' | 'Cobalt' | 'Manganese';
+import { MineralType } from '@/pages/DrillingCostEstimator';
 
 interface MineralTagProps {
   type: MineralType;
@@ -21,6 +20,8 @@ const MineralTag: React.FC<MineralTagProps> = ({ type }) => {
         return 'bg-mining-cobalt text-white';
       case 'Manganese':
         return 'bg-mining-manganese text-white';
+      case 'Iron':
+        return 'bg-red-700 text-white';
       default:
         return 'bg-gray-500 text-white';
     }

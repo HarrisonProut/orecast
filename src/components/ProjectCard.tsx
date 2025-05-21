@@ -1,6 +1,7 @@
 
 import React from 'react';
 import MineralTag from './ui/MineralTag';
+import { MineralType } from '@/pages/DrillingCostEstimator';
 
 export interface ProjectData {
   id: string;
@@ -8,7 +9,7 @@ export interface ProjectData {
   location: string;
   country: string;
   npv: number;
-  minerals: Array<'Copper' | 'Gold' | 'Silver' | 'Cobalt' | 'Manganese'>;
+  minerals: MineralType[];
   createdDate: string;
 }
 

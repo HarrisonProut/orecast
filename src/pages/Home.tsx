@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus } from 'lucide-react';
@@ -9,59 +8,17 @@ const Home: React.FC = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const navigate = useNavigate();
   
-  // Sample base projects
-  const baseProjects: ProjectData[] = [
-    {
-      id: '1',
-      name: 'Copper Mountain Exploration',
-      location: 'British Columbia',
-      country: 'Canada',
-      npv: 245.5,
-      minerals: ['Copper'],
-      createdDate: '2023-12-04',
-    },
-    {
-      id: '2',
-      name: 'Golden Valley Project',
-      location: 'Nevada',
-      country: 'United States',
-      npv: 156.8,
-      minerals: ['Gold'],
-      createdDate: '2023-08-28',
-    },
-    {
-      id: '3',
-      name: 'Silver Peak Development',
-      location: 'Western Australia',
-      country: 'Australia',
-      npv: 387.2,
-      minerals: ['Silver', 'Gold'],
-      createdDate: '2023-05-02',
-    },
-    {
-      id: '4',
-      name: 'Atacama Lithium Project',
-      location: 'Antofagasta',
-      country: 'Chile',
-      npv: 423.6,
-      minerals: ['Cobalt', 'Manganese'],
-      createdDate: '2023-04-19',
-    },
-  ];
-
   // Load projects from localStorage on initial load
   useEffect(() => {
     const savedProjects = localStorage.getItem('explorationProjects');
     if (savedProjects) {
       const parsedProjects = JSON.parse(savedProjects);
-      setProjects([...baseProjects, ...parsedProjects]);
-    } else {
-      setProjects(baseProjects);
+      setProjects(parsedProjects);
     }
   }, []);
 
   const handleAddProject = () => {
-    navigate('/drilling-cost-estimator');
+    // Keep this button empty as requested
   };
 
   return (
@@ -73,11 +30,17 @@ const Home: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
+      {projects.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16">
+          <p className="text-gray-500 text-lg">No projects yet. Use the Drilling Cost Estimator to create new projects.</p>
+        </div>
+      )}
     </div>
   );
 };

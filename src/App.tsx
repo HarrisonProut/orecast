@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Home from "./pages/Home";
 import DrillingCostEstimator from "./pages/DrillingCostEstimator";
+import ExplorationComparison from "./pages/ExplorationComparison";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/drilling-cost-estimator" element={<DrillingCostEstimator />} />
+            <Route path="/exploration-comparison" element={<ExplorationComparison />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
