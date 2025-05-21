@@ -5,9 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 interface CostChartProps {
   data: {
     name: string;
-    conservative: number;
-    average: number;
-    ambitious: number;
+    cost: number;
   }[];
 }
 
@@ -29,9 +27,7 @@ const CostChart: React.FC<CostChartProps> = ({ data }) => {
           <YAxis />
           <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
           <Legend />
-          <Bar dataKey="conservative" name="Conservative Estimate" fill="#3B82F6" />
-          <Bar dataKey="average" name="Average Estimate" fill="#8B5CF6" />
-          <Bar dataKey="ambitious" name="Ambitious Estimate" fill="#EC4899" />
+          <Bar dataKey="cost" name="Drilling Cost Estimate" fill="#8B5CF6" />
         </BarChart>
       </ResponsiveContainer>
     </div>
