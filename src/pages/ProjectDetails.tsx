@@ -7,12 +7,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ProjectData } from '@/components/ProjectCard';
 import { MineralType } from '@/pages/DrillingCostEstimator';
 import { Button } from '@/components/ui/button';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Define financial metrics interface
 interface FinancialMetrics {
   npv: number;
   irr: number;
   paybackPeriod: number;
+  npvData: Array<{year: number, value: number}>;
+  paybackData: Array<{year: number, value: number}>;
 }
 
 // Define slider configuration
@@ -33,6 +37,8 @@ const ProjectDetails: React.FC = () => {
     npv: 63000000, // Default $63M
     irr: 8.3, // Default 8.3%
     paybackPeriod: 8, // Default 8 years
+    npvData: [],
+    paybackData: []
   });
 
   // Define sliders with initial values
@@ -100,6 +106,52 @@ const ProjectDetails: React.FC = () => {
     loadProject();
   }, [id]);
 
+  // Generate NPV and payback data when metrics change
+  useEffect(() => {
+    // Generate NPV data over years
+    const generateNpvData = () => {
+      const years = sliders.find(s => s.id === 'time-of-project')?.value || 5;
+      const data = [];
+      
+      // Initial investment (negative)
+      data.push({ year: 0, value: -15000000 });
+      
+      // Generate cash flows with increasing values
+      for (let i = 1; i <= years; i++) {
+        const yearValue = (metrics.npv / years) * (1 + (i / 10)) * (i / years);
+        data.push({ year: i, value: Math.round(yearValue) });
+      }
+      
+      return data;
+    };
+    
+    // Generate payback data
+    const generatePaybackData = () => {
+      const years = sliders.find(s => s.id === 'time-of-project')?.value || 5;
+      const data = [];
+      let cumulativeValue = -15000000; // Initial investment
+      
+      data.push({ year: 0, value: cumulativeValue });
+      
+      for (let i = 1; i <= years; i++) {
+        const yearValue = (metrics.npv / years) * (1 + (i / 10)) * (i / years);
+        cumulativeValue += yearValue;
+        data.push({ year: i, value: Math.round(cumulativeValue) });
+      }
+      
+      return data;
+    };
+    
+    const npvData = generateNpvData();
+    const paybackData = generatePaybackData();
+    
+    setMetrics(prev => ({
+      ...prev,
+      npvData,
+      paybackData
+    }));
+  }, [metrics.npv, sliders]);
+
   // Update financial metrics when sliders change
   useEffect(() => {
     const calculateMetrics = () => {
@@ -134,11 +186,12 @@ const ProjectDetails: React.FC = () => {
       const paybackMultiplier = baseNpv / newNpv;
       const newPayback = Math.round(basePayback * paybackMultiplier * 10) / 10;
 
-      setMetrics({
+      setMetrics(prev => ({
+        ...prev,
         npv: newNpv,
         irr: newIrr,
         paybackPeriod: newPayback
-      });
+      }));
     };
 
     calculateMetrics();
@@ -251,27 +304,40 @@ const ProjectDetails: React.FC = () => {
           <p className="text-gray-500 mb-4">Financial metrics based on your inputs</p>
           
           {/* NPV */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium">Net Present Value</h3>
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-mining-primary">
-                {formatCurrency(metrics.npv)}
-              </span>
-            </div>
-            
-            <div className="mt-4 border-b pb-4">
-              <div className="w-full bg-gray-100 rounded-full h-3">
-                <div 
-                  className="bg-green-500 h-3 rounded-full"
-                  style={{ width: `${(metrics.npv / 100000000) * 100}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between mt-1 text-xs text-gray-500">
-                <span>$0</span>
-                <span>$100M</span>
-              </div>
-            </div>
-          </div>
+          <Accordion type="single" collapsible className="mb-4">
+            <AccordionItem value="npv">
+              <AccordionTrigger className="py-2">
+                <div className="flex justify-between w-full">
+                  <span>Net Present Value</span>
+                  <span className="font-bold text-mining-primary">
+                    {formatCurrency(metrics.npv)}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-2 pb-4 h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={metrics.npvData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" label={{ value: 'Years', position: 'insideBottom', offset: -5 }} />
+                      <YAxis 
+                        tickFormatter={(value) => `$${(value/1000000).toFixed(0)}M`}
+                        label={{ value: 'Cash Flow ($)', angle: -90, position: 'insideLeft' }}
+                      />
+                      <Tooltip 
+                        formatter={(value: any) => [`${formatCurrency(value)}`, 'Cash Flow']} 
+                        labelFormatter={(label) => `Year ${label}`}
+                      />
+                      <Area type="monotone" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  This chart shows the projected cash flows over the lifetime of the project. The NPV is the sum of these cash flows discounted to present value.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
           
           {/* IRR */}
           <Accordion type="single" collapsible className="mb-4">
@@ -303,7 +369,7 @@ const ProjectDetails: React.FC = () => {
           </Accordion>
           
           {/* Payback Period */}
-          <Accordion type="single" collapsible>
+          <Accordion type="single" collapsible className="mb-4">
             <AccordionItem value="payback">
               <AccordionTrigger className="py-2">
                 <div className="flex justify-between w-full">
@@ -312,20 +378,33 @@ const ProjectDetails: React.FC = () => {
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="pt-2 pb-4">
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div 
-                      className="bg-amber-500 h-2 rounded-full"
-                      style={{ width: `${(metrics.paybackPeriod / 15) * 100}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between mt-1 text-xs text-gray-500">
-                    <span>0 years</span>
-                    <span>15 years</span>
-                  </div>
+                <div className="pt-2 pb-4 h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={metrics.paybackData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" label={{ value: 'Years', position: 'insideBottom', offset: -5 }} />
+                      <YAxis 
+                        tickFormatter={(value) => `$${(value/1000000).toFixed(0)}M`} 
+                        label={{ value: 'Cumulative Cash Flow ($)', angle: -90, position: 'insideLeft' }}
+                      />
+                      <Tooltip 
+                        formatter={(value: any) => [`${formatCurrency(value)}`, 'Cumulative Cash Flow']} 
+                        labelFormatter={(label) => `Year ${label}`}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2} 
+                        dot={{ fill: '#3b82f6', r: 4 }}
+                      />
+                      {/* Add a reference line at y=0 to show payback threshold */}
+                      <CartesianGrid horizontal={true} vertical={false} strokeDasharray="3 3" strokeOpacity={0.5} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
                 <p className="text-sm text-gray-600 mt-2">
-                  The payback period represents the time needed to recover the initial investment. A shorter payback period is generally preferred.
+                  The payback period represents the time needed to recover the initial investment. The chart shows when the cumulative cash flow crosses above zero.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -342,6 +421,54 @@ const ProjectDetails: React.FC = () => {
               <li>Deposit grade and tonnage</li>
               <li>Capital investment required</li>
               <li>Timing of cash flows</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      {/* Exploration Drilling Cost Section */}
+      <div className="mt-8 border rounded-lg p-6 bg-white shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Exploration Drilling Cost</h2>
+          <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+            in progress
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-2">
+              Estimated drilling cost from the exploration site analysis:
+            </p>
+            <p className="text-xl font-bold text-mining-primary">
+              {project.cost}
+            </p>
+            {project.costRange && (
+              <p className="text-sm text-gray-500 mt-1">
+                Cost Range: {project.costRange}
+              </p>
+            )}
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-md">
+            <h4 className="font-medium mb-2 text-sm">Drilling Details</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li className="flex justify-between">
+                <span>Drilling Type:</span>
+                <span className="font-medium">Reverse Circulation</span>
+              </li>
+              <li className="flex justify-between">
+                <span>Estimated Duration:</span>
+                <span className="font-medium">3-4 weeks</span>
+              </li>
+              <li className="flex justify-between">
+                <span>Depth:</span>
+                <span className="font-medium">350m</span>
+              </li>
+              <li className="flex justify-between">
+                <span>Core Samples:</span>
+                <span className="font-medium">Required</span>
+              </li>
             </ul>
           </div>
         </div>

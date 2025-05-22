@@ -11,10 +11,12 @@ export interface ProjectData {
   name: string;
   location: string;
   country: string;
-  cost: string; // Changed from npv to cost
+  cost: string; // Drilling cost
+  costRange?: string; // Added costRange
+  npvRange?: string; // Added npvRange
   minerals: MineralType[];
   createdDate: string;
-  status?: 'in progress' | 'completed'; // Added status
+  status?: 'in progress' | 'completed'; // Status
 }
 
 interface ProjectCardProps {
@@ -55,9 +57,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
       </div>
       <p className="text-gray-600 mb-4">{project.location}, {project.country}</p>
       
-      <div className="flex items-center mb-4">
-        <span className="text-gray-500 mr-2">Estimated Cost:</span>
-        <span className="font-semibold text-lg text-mining-primary">{project.cost}</span>
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="flex items-center">
+          <span className="text-gray-500 mr-2">Drilling Cost:</span>
+          <span className="font-semibold text-lg text-mining-primary">{project.cost}</span>
+        </div>
+        {project.costRange && (
+          <div className="flex items-center">
+            <span className="text-gray-500 mr-2">Cost Range:</span>
+            <span className="text-sm text-gray-700">{project.costRange}</span>
+          </div>
+        )}
+        {project.npvRange && (
+          <div className="flex items-center">
+            <span className="text-gray-500 mr-2">NPV Range:</span>
+            <span className="text-sm text-gray-700">{project.npvRange}</span>
+          </div>
+        )}
       </div>
       
       <div className="flex flex-wrap gap-2 mb-4">
