@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MineralType } from './DrillingCostEstimator';
+import MineralTag from '@/components/ui/MineralTag';
 
 type ComparisonSiteItem = {
   id: string;
@@ -36,19 +37,39 @@ const ExplorationComparison: React.FC = () => {
   // Load site history from localStorage for this demo
   // In a real app, you would likely have a more persistent storage
   useEffect(() => {
-    const savedHistory = localStorage.getItem('drillingSearchHistory');
-    if (savedHistory) {
-      try {
-        const parsedHistory = JSON.parse(savedHistory);
-        const formattedHistory = parsedHistory.map((site: any) => ({
-          ...site,
-          selected: false,
-        }));
-        setSiteHistory(formattedHistory);
-      } catch (error) {
-        console.error("Error parsing drilling history:", error);
+    const loadSites = () => {
+      const savedHistory = localStorage.getItem('drillingSearchHistory');
+      if (savedHistory) {
+        try {
+          const parsedHistory = JSON.parse(savedHistory);
+          const formattedHistory = parsedHistory.map((site: any) => ({
+            ...site,
+            selected: false,
+          }));
+          setSiteHistory(formattedHistory);
+        } catch (error) {
+          console.error("Error parsing drilling history:", error);
+        }
       }
-    }
+    };
+    
+    loadSites();
+    
+    // Set up listener to refresh data when localStorage changes
+    const handleStorageChange = () => {
+      loadSites();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // This is a workaround to detect localStorage changes in the same tab
+    // We'll check for updates every 2 seconds
+    const interval = setInterval(loadSites, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, []);
 
   const toggleSiteSelection = (siteId: string) => {
@@ -150,6 +171,23 @@ const ExplorationComparison: React.FC = () => {
                     })}
                   </tr>
                   <tr className="border-b">
+                    <td className="p-3 font-medium">Target Minerals</td>
+                    {selectedSites.map(siteId => {
+                      const site = siteHistory.find(s => s.id === siteId);
+                      return site ? (
+                        <td key={site.id} className="p-3">
+                          <div className="flex flex-wrap gap-1">
+                            {site.selectedMinerals.length > 0 ? 
+                              site.selectedMinerals.map(mineral => (
+                                <MineralTag key={mineral} type={mineral} />
+                              ))
+                            : 'None specified'}
+                          </div>
+                        </td>
+                      ) : null;
+                    })}
+                  </tr>
+                  <tr className="border-b">
                     <td className="p-3 font-medium">Depth</td>
                     {selectedSites.map(siteId => {
                       const site = siteHistory.find(s => s.id === siteId);
@@ -164,19 +202,6 @@ const ExplorationComparison: React.FC = () => {
                       const site = siteHistory.find(s => s.id === siteId);
                       return site ? (
                         <td key={site.id} className="p-3 font-medium text-mining-primary">{site.costRange}</td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Target Minerals</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">
-                          {site.selectedMinerals.length > 0 
-                            ? site.selectedMinerals.join(', ')
-                            : 'None specified'}
-                        </td>
                       ) : null;
                     })}
                   </tr>

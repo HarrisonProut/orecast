@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const Home: React.FC = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Load projects from localStorage on initial load
   useEffect(() => {
@@ -21,6 +24,17 @@ const Home: React.FC = () => {
     // Keep this button empty as requested
   };
 
+  const handleDeleteProject = (id: string) => {
+    const updatedProjects = projects.filter(project => project.id !== id);
+    setProjects(updatedProjects);
+    localStorage.setItem('explorationProjects', JSON.stringify(updatedProjects));
+    
+    toast({
+      title: "Project deleted",
+      description: "The project has been successfully removed",
+    });
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
@@ -33,7 +47,11 @@ const Home: React.FC = () => {
       {projects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard 
+              key={project.id} 
+              project={project} 
+              onDelete={handleDeleteProject}
+            />
           ))}
         </div>
       ) : (
