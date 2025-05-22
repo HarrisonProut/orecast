@@ -8,6 +8,7 @@ import Navbar from "./components/layout/Navbar";
 import Home from "./pages/Home";
 import DrillingCostEstimator from "./pages/DrillingCostEstimator";
 import ExplorationComparison from "./pages/ExplorationComparison";
+import ProjectDetails from "./pages/ProjectDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/drilling-cost-estimator" element={<DrillingCostEstimator />} />
             <Route path="/exploration-comparison" element={<ExplorationComparison />} />
+            <Route path="/project/:id" element={<ProjectDetails />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

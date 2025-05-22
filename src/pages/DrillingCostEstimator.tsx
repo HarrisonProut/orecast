@@ -256,6 +256,9 @@ const DrillingCostEstimator: React.FC = () => {
     
     setShowEstimation(true);
     setActiveSiteId(newItem.id);
+    
+    // Reset mineral selection to allow for new selections
+    setLocalMineralSelection([]);
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -291,7 +294,7 @@ const DrillingCostEstimator: React.FC = () => {
     setCostRange(item.costRange);
     setActiveSiteId(item.id);
     setSelectedMinerals(item.selectedMinerals);
-    setLocalMineralSelection(item.selectedMinerals);
+    setLocalMineralSelection([]);
     setCostBreakdown(item.costBreakdown);
     setDrillingMethod(item.drillingMethod);
     setTerrain(item.terrain);
@@ -403,7 +406,6 @@ const DrillingCostEstimator: React.FC = () => {
               <Label htmlFor="minerals">Mineral Target</Label>
               <Select
                 onValueChange={(value) => handleToggleMineralSelection(value as MineralType)}
-                disabled={showEstimation}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select minerals" />
@@ -434,14 +436,12 @@ const DrillingCostEstimator: React.FC = () => {
                       className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm"
                     >
                       {mineral}
-                      {!showEstimation && (
-                        <button 
-                          className="ml-2 text-gray-500 hover:text-gray-700"
-                          onClick={() => handleToggleMineralSelection(mineral)}
-                        >
-                          ×
-                        </button>
-                      )}
+                      <button 
+                        className="ml-2 text-gray-500 hover:text-gray-700"
+                        onClick={() => handleToggleMineralSelection(mineral)}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
                 </div>

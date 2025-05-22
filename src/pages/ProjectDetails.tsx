@@ -1,0 +1,353 @@
+
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ProjectData } from '@/components/ProjectCard';
+import { MineralType } from '@/pages/DrillingCostEstimator';
+import { Button } from '@/components/ui/button';
+
+// Define financial metrics interface
+interface FinancialMetrics {
+  npv: number;
+  irr: number;
+  paybackPeriod: number;
+}
+
+// Define slider configuration
+interface SliderConfig {
+  id: string;
+  name: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  unit: string;
+}
+
+const ProjectDetails: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [project, setProject] = useState<ProjectData | null>(null);
+  const [metrics, setMetrics] = useState<FinancialMetrics>({
+    npv: 63000000, // Default $63M
+    irr: 8.3, // Default 8.3%
+    paybackPeriod: 8, // Default 8 years
+  });
+
+  // Define sliders with initial values
+  const [sliders, setSliders] = useState<SliderConfig[]>([
+    {
+      id: 'mineral-price',
+      name: 'Mineral Price',
+      min: 0,
+      max: 100,
+      step: 1,
+      value: 50, // Start in the middle
+      unit: '% of current price'
+    },
+    {
+      id: 'deposit-size',
+      name: 'Deposit Size',
+      min: 0,
+      max: 1000,
+      step: 10,
+      value: 500,
+      unit: 'tonnes'
+    },
+    {
+      id: 'mineral-quality',
+      name: 'Mineral Quality',
+      min: 0,
+      max: 100,
+      step: 1,
+      value: 70,
+      unit: '%'
+    },
+    {
+      id: 'capex-investment',
+      name: 'CAPEX Investment',
+      min: 0,
+      max: 100,
+      step: 1,
+      value: 50,
+      unit: 'M$'
+    },
+    {
+      id: 'time-of-project',
+      name: 'Time of Project',
+      min: 1,
+      max: 10,
+      step: 1,
+      value: 5,
+      unit: 'years'
+    }
+  ]);
+
+  // Load project data from localStorage
+  useEffect(() => {
+    const loadProject = () => {
+      const savedProjects = localStorage.getItem('explorationProjects');
+      if (savedProjects) {
+        const projects: ProjectData[] = JSON.parse(savedProjects);
+        const foundProject = projects.find(p => p.id === id);
+        if (foundProject) {
+          setProject(foundProject);
+        }
+      }
+    };
+
+    loadProject();
+  }, [id]);
+
+  // Update financial metrics when sliders change
+  useEffect(() => {
+    const calculateMetrics = () => {
+      const mineralPrice = sliders.find(s => s.id === 'mineral-price')?.value || 50;
+      const depositSize = sliders.find(s => s.id === 'deposit-size')?.value || 500;
+      const mineralQuality = sliders.find(s => s.id === 'mineral-quality')?.value || 70;
+      const capexInvestment = sliders.find(s => s.id === 'capex-investment')?.value || 50;
+      const projectTime = sliders.find(s => s.id === 'time-of-project')?.value || 5;
+
+      // Base NPV calculation with some randomization
+      const baseNpv = 63000000;
+      
+      // Apply slider effects
+      const priceEffect = (mineralPrice / 50) * 0.5; // 50% impact
+      const depositEffect = (depositSize / 500) * 0.7; // 70% impact
+      const qualityEffect = (mineralQuality / 70) * 0.3; // 30% impact
+      const capexEffect = (1 - (capexInvestment / 50)) * 0.4; // 40% impact (inverse)
+      const timeEffect = (1 - (projectTime / 5)) * 0.2; // 20% impact (inverse)
+      
+      // Combined multiplier for NPV
+      const multiplier = 0.3 + (priceEffect + depositEffect + qualityEffect + capexEffect + timeEffect);
+      const newNpv = Math.round(baseNpv * multiplier);
+      
+      // Calculate IRR based on NPV
+      // Higher NPV generally means higher IRR
+      const baseIrr = 8.3;
+      const irrMultiplier = Math.sqrt(newNpv / baseNpv); // Non-linear relationship
+      const newIrr = Math.round(baseIrr * irrMultiplier * 10) / 10;
+      
+      // Calculate payback period (inversely related to NPV)
+      const basePayback = 8;
+      const paybackMultiplier = baseNpv / newNpv;
+      const newPayback = Math.round(basePayback * paybackMultiplier * 10) / 10;
+
+      setMetrics({
+        npv: newNpv,
+        irr: newIrr,
+        paybackPeriod: newPayback
+      });
+    };
+
+    calculateMetrics();
+  }, [sliders]);
+
+  // Handle slider change
+  const handleSliderChange = (sliderId: string, newValue: number[]) => {
+    setSliders(prev => 
+      prev.map(slider => 
+        slider.id === sliderId 
+          ? { ...slider, value: newValue[0] } 
+          : slider
+      )
+    );
+  };
+
+  // Format currency
+  const formatCurrency = (value: number): string => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    return `$${value.toLocaleString()}`;
+  };
+
+  if (!project) {
+    return (
+      <div className="container mx-auto py-10 px-4 text-center">
+        <p>Project not found.</p>
+        <Link to="/" className="text-blue-500 hover:underline mt-4 inline-block">
+          Return to Projects
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4">
+      <div className="mb-6">
+        <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
+          ← Back to Projects
+        </Link>
+      </div>
+      
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">{project.name}</h1>
+        <p className="text-gray-600">{project.location}, {project.country}</p>
+        <p className="text-sm text-gray-500">Coordinates: Lat: 45.1786, Long: -123.121</p>
+      </div>
+      
+      {/* Location Map */}
+      <div className="border rounded-lg p-6 bg-white shadow-sm mb-8">
+        <h2 className="text-xl font-semibold mb-4">Location Map</h2>
+        <div className="bg-[url('https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/0,0,3,0/1000x400?access_token=pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xneng1Mmp4MHRkYzNpcXl5ZDZ6Y2lyNSJ9.3jkU624v1hwRIm46HJbHMw')] rounded-md h-64 flex items-center justify-center bg-cover relative">
+          <MapPin className="h-10 w-10 text-mining-primary drop-shadow-lg" />
+        </div>
+        <div className="mt-4 bg-gray-50 border rounded-md p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-medium text-sm text-gray-500">Location Information</h4>
+              <p className="font-medium">{project.location}, {project.country}</p>
+              <p className="text-sm text-gray-600 mt-2">
+                This exploration site is located in {project.location}, {project.country}. This area may have geological 
+                characteristics that impact drilling costs and resource potential.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main content - split into two columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left column - Sliders */}
+        <div className="border rounded-lg p-6 bg-white shadow-sm">
+          <h2 className="text-xl font-semibold mb-4">Project Inputs</h2>
+          <p className="text-gray-500 mb-4">Adjust parameters to see impact on project metrics</p>
+          
+          <div className="space-y-8">
+            {sliders.map(slider => (
+              <div key={slider.id} className="space-y-2">
+                <div className="flex justify-between">
+                  <label htmlFor={slider.id} className="text-sm font-medium">
+                    {slider.name}
+                  </label>
+                  <span className="text-sm">
+                    {slider.value} {slider.unit}
+                  </span>
+                </div>
+                <Slider
+                  id={slider.id}
+                  min={slider.min}
+                  max={slider.max}
+                  step={slider.step}
+                  value={[slider.value]}
+                  onValueChange={(value) => handleSliderChange(slider.id, value)}
+                  className="py-2"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>{slider.min} {slider.unit}</span>
+                  <span>{slider.max} {slider.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Right column - Financial Metrics */}
+        <div className="border rounded-lg p-6 bg-white shadow-sm">
+          <h2 className="text-xl font-semibold mb-4">Project Outputs</h2>
+          <p className="text-gray-500 mb-4">Financial metrics based on your inputs</p>
+          
+          {/* NPV */}
+          <div className="mb-8">
+            <h3 className="text-lg font-medium">Net Present Value</h3>
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-bold text-mining-primary">
+                {formatCurrency(metrics.npv)}
+              </span>
+            </div>
+            
+            <div className="mt-4 border-b pb-4">
+              <div className="w-full bg-gray-100 rounded-full h-3">
+                <div 
+                  className="bg-green-500 h-3 rounded-full"
+                  style={{ width: `${(metrics.npv / 100000000) * 100}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between mt-1 text-xs text-gray-500">
+                <span>$0</span>
+                <span>$100M</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* IRR */}
+          <Accordion type="single" collapsible className="mb-4">
+            <AccordionItem value="irr">
+              <AccordionTrigger className="py-2">
+                <div className="flex justify-between w-full">
+                  <span>Internal Rate of Return</span>
+                  <span className="font-bold text-mining-primary">{metrics.irr}%</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-2 pb-4">
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full"
+                      style={{ width: `${(metrics.irr / 15) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <span>0%</span>
+                    <span>15%</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  This project's IRR indicates the profitability of the investment. The higher the IRR, the more attractive the project.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          
+          {/* Payback Period */}
+          <Accordion type="single" collapsible>
+            <AccordionItem value="payback">
+              <AccordionTrigger className="py-2">
+                <div className="flex justify-between w-full">
+                  <span>Payback Period</span>
+                  <span className="font-bold text-mining-primary">{metrics.paybackPeriod} years</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-2 pb-4">
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div 
+                      className="bg-amber-500 h-2 rounded-full"
+                      style={{ width: `${(metrics.paybackPeriod / 15) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <span>0 years</span>
+                    <span>15 years</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  The payback period represents the time needed to recover the initial investment. A shorter payback period is generally preferred.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          
+          <div className="mt-8 p-4 bg-gray-50 rounded-md border">
+            <h3 className="font-medium mb-2">NPV Analysis</h3>
+            <p className="text-sm text-gray-600">
+              The Net Present Value of {formatCurrency(metrics.npv)} suggests a strong potential for profit generation with this project.
+            </p>
+            <h4 className="font-medium mt-4 mb-2 text-sm">Key influencing factors:</h4>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+              <li>Metal price projection</li>
+              <li>Deposit grade and tonnage</li>
+              <li>Capital investment required</li>
+              <li>Timing of cash flows</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProjectDetails;

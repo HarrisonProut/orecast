@@ -36,7 +36,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
   };
 
   const handleOpen = () => {
-    navigate('/drilling-cost-estimator'); // Navigate to estimator when opening a project
+    // Navigate to the project details page with the project id
+    navigate(`/project/${project.id}`);
   };
 
   return (
