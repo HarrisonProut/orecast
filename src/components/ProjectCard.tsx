@@ -16,7 +16,7 @@ export interface ProjectData {
   npvRange?: string; // Added npvRange
   minerals: MineralType[];
   createdDate: string;
-  status?: 'in progress' | 'completed'; // Status
+  status?: 'in progress' | 'completed' | 'planning' | 'N/A'; // Extended status options
 }
 
 interface ProjectCardProps {
@@ -87,7 +87,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
           <span className="text-sm text-gray-500 mr-2">Created: {formatDate(project.createdDate)}</span>
           {project.status && (
             <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-              {project.status}
+              {project.status} {project.status !== 'N/A' ? 'drilling operations' : ''}
             </span>
           )}
         </div>

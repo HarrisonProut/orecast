@@ -7,7 +7,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ProjectData } from '@/components/ProjectCard';
 import { MineralType } from '@/pages/DrillingCostEstimator';
 import { Button } from '@/components/ui/button';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Define financial metrics interface
@@ -332,6 +331,19 @@ const ProjectDetails: React.FC = () => {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+                <div className="mt-8 p-4 bg-gray-50 rounded-md border">
+                  <h3 className="font-medium mb-2">NPV Analysis</h3>
+                  <p className="text-sm text-gray-600">
+                    The Net Present Value of {formatCurrency(metrics.npv)} suggests a strong potential for profit generation with this project.
+                  </p>
+                  <h4 className="font-medium mt-4 mb-2 text-sm">Key influencing factors:</h4>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                    <li>Metal price projection</li>
+                    <li>Deposit grade and tonnage</li>
+                    <li>Capital investment required</li>
+                    <li>Timing of cash flows</li>
+                  </ul>
+                </div>
                 <p className="text-sm text-gray-600 mt-2">
                   This chart shows the projected cash flows over the lifetime of the project. The NPV is the sum of these cash flows discounted to present value.
                 </p>
@@ -409,20 +421,6 @@ const ProjectDetails: React.FC = () => {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-          
-          <div className="mt-8 p-4 bg-gray-50 rounded-md border">
-            <h3 className="font-medium mb-2">NPV Analysis</h3>
-            <p className="text-sm text-gray-600">
-              The Net Present Value of {formatCurrency(metrics.npv)} suggests a strong potential for profit generation with this project.
-            </p>
-            <h4 className="font-medium mt-4 mb-2 text-sm">Key influencing factors:</h4>
-            <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
-              <li>Metal price projection</li>
-              <li>Deposit grade and tonnage</li>
-              <li>Capital investment required</li>
-              <li>Timing of cash flows</li>
-            </ul>
-          </div>
         </div>
       </div>
       
@@ -431,17 +429,17 @@ const ProjectDetails: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Exploration Drilling Cost</h2>
           <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-            in progress
+            {project.status || 'in progress'} drilling operations
           </span>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-600 mb-2">
-              Estimated drilling cost from the exploration site analysis:
+              {project.cost ? 'Estimated drilling cost from the exploration site analysis:' : 'Drilling cost:'}
             </p>
             <p className="text-xl font-bold text-mining-primary">
-              {project.cost}
+              {project.cost || 'Not calculated using Drilling Cost Estimator'}
             </p>
             {project.costRange && (
               <p className="text-sm text-gray-500 mt-1">
@@ -450,27 +448,29 @@ const ProjectDetails: React.FC = () => {
             )}
           </div>
           
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h4 className="font-medium mb-2 text-sm">Drilling Details</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex justify-between">
-                <span>Drilling Type:</span>
-                <span className="font-medium">Reverse Circulation</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Estimated Duration:</span>
-                <span className="font-medium">3-4 weeks</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Depth:</span>
-                <span className="font-medium">350m</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Core Samples:</span>
-                <span className="font-medium">Required</span>
-              </li>
-            </ul>
-          </div>
+          {project.cost && (
+            <div className="bg-gray-50 p-4 rounded-md">
+              <h4 className="font-medium mb-2 text-sm">Drilling Details</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex justify-between">
+                  <span>Drilling Type:</span>
+                  <span className="font-medium">Reverse Circulation</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Estimated Duration:</span>
+                  <span className="font-medium">3-4 weeks</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Depth:</span>
+                  <span className="font-medium">350m</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Core Samples:</span>
+                  <span className="font-medium">Required</span>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

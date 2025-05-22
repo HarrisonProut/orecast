@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MineralType } from './DrillingCostEstimator';
 import MineralTag from '@/components/ui/MineralTag';
+import { useToast } from '@/hooks/use-toast';
 
 type ComparisonSiteItem = {
   id: string;
@@ -29,10 +30,13 @@ type ComparisonSiteItem = {
   selected: boolean;
 };
 
+const MAX_SIDE_BY_SIDE_COMPARISON = 4;
+
 const ExplorationComparison: React.FC = () => {
   const [siteHistory, setSiteHistory] = useState<ComparisonSiteItem[]>([]);
   const [selectedSites, setSelectedSites] = useState<string[]>([]);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Load site history from localStorage for this demo
   // In a real app, you would likely have a more persistent storage
@@ -76,8 +80,37 @@ const ExplorationComparison: React.FC = () => {
     if (selectedSites.includes(siteId)) {
       setSelectedSites(selectedSites.filter(id => id !== siteId));
     } else {
-      setSelectedSites([...selectedSites, siteId]);
+      if (selectedSites.length < MAX_SIDE_BY_SIDE_COMPARISON) {
+        setSelectedSites([...selectedSites, siteId]);
+      } else {
+        toast({
+          title: "Maximum sites selected",
+          description: `You can only compare up to ${MAX_SIDE_BY_SIDE_COMPARISON} sites side by side.`,
+          variant: "destructive"
+        });
+      }
     }
+  };
+
+  const handleDeleteSite = (siteId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Remove from selected sites if it's selected
+    if (selectedSites.includes(siteId)) {
+      setSelectedSites(selectedSites.filter(id => id !== siteId));
+    }
+    
+    // Remove from history
+    const updatedHistory = siteHistory.filter(site => site.id !== siteId);
+    setSiteHistory(updatedHistory);
+    
+    // Update localStorage
+    localStorage.setItem('drillingSearchHistory', JSON.stringify(updatedHistory));
+    
+    toast({
+      title: "Site removed",
+      description: "The site has been removed from your search history",
+    });
   };
 
   return (
@@ -103,13 +136,23 @@ const ExplorationComparison: React.FC = () => {
               siteHistory.map((site) => (
                 <div 
                   key={site.id}
-                  className={`border p-4 rounded-md cursor-pointer transition-colors ${
+                  className={`border p-4 rounded-md cursor-pointer transition-colors relative ${
                     selectedSites.includes(site.id) 
                       ? 'border-mining-primary bg-mining-primary/10' 
                       : 'hover:bg-gray-50'
                   }`}
                   onClick={() => toggleSiteSelection(site.id)}
                 >
+                  <div className="absolute top-2 right-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-gray-400 hover:text-red-500" 
+                      onClick={(e) => handleDeleteSite(site.id, e)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <h3 className="font-medium">{site.name}</h3>
                   <p className="text-sm text-gray-600">{site.locationDetails.name}, {site.locationDetails.country}</p>
                   <div className="mt-2 text-xs text-gray-500 flex justify-between">
@@ -269,7 +312,7 @@ const ExplorationComparison: React.FC = () => {
             <div className="h-60 flex items-center justify-center">
               <div className="text-center">
                 <p className="text-gray-500">Select sites from the left panel to compare</p>
-                <p className="text-sm text-gray-400 mt-2">You can select multiple sites to view side by side</p>
+                <p className="text-sm text-gray-400 mt-2">You can select up to {MAX_SIDE_BY_SIDE_COMPARISON} sites to view side by side</p>
               </div>
             </div>
           )}
