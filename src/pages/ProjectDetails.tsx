@@ -6,7 +6,6 @@ import { Slider } from '@/components/ui/slider';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ProjectData } from '@/components/ProjectCard';
 import { MineralType } from '@/pages/DrillingCostEstimator';
-import { Button } from '@/components/ui/button';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Define financial metrics interface
@@ -29,6 +28,12 @@ interface SliderConfig {
   unit: string;
 }
 
+interface MineralPrice {
+  mineral: MineralType;
+  price: number;
+  unit: string;
+}
+
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -40,17 +45,11 @@ const ProjectDetails: React.FC = () => {
     paybackData: []
   });
 
+  // Define mineral prices
+  const [mineralPrices, setMineralPrices] = useState<MineralPrice[]>([]);
+
   // Define sliders with initial values
   const [sliders, setSliders] = useState<SliderConfig[]>([
-    {
-      id: 'mineral-price',
-      name: 'Mineral Price',
-      min: 0,
-      max: 100,
-      step: 1,
-      value: 50, // Start in the middle
-      unit: '% of current price'
-    },
     {
       id: 'deposit-size',
       name: 'Deposit Size',
@@ -89,6 +88,25 @@ const ProjectDetails: React.FC = () => {
     }
   ]);
 
+  // Generate random prices for minerals
+  const generateMineralPrices = (minerals: MineralType[]) => {
+    const priceMap: Record<MineralType, { price: number, unit: string }> = {
+      gold: { price: Math.round(18000 + Math.random() * 2000) / 10, unit: '$/oz' },
+      silver: { price: Math.round(230 + Math.random() * 50) / 10, unit: '$/oz' },
+      copper: { price: Math.round(350 + Math.random() * 80) / 100, unit: '$/lb' },
+      zinc: { price: Math.round(120 + Math.random() * 30) / 100, unit: '$/lb' },
+      lithium: { price: Math.round(60000 + Math.random() * 20000) / 10, unit: '$/tonne' },
+      nickel: { price: Math.round(16000 + Math.random() * 4000) / 10, unit: '$/tonne' },
+      uranium: { price: Math.round(500 + Math.random() * 100) / 10, unit: '$/lb' },
+    };
+
+    return minerals.map(mineral => ({
+      mineral,
+      price: priceMap[mineral].price,
+      unit: priceMap[mineral].unit
+    }));
+  };
+
   // Load project data from localStorage
   useEffect(() => {
     const loadProject = () => {
@@ -98,6 +116,11 @@ const ProjectDetails: React.FC = () => {
         const foundProject = projects.find(p => p.id === id);
         if (foundProject) {
           setProject(foundProject);
+          
+          // Generate random prices for project minerals
+          if (foundProject.minerals && foundProject.minerals.length > 0) {
+            setMineralPrices(generateMineralPrices(foundProject.minerals));
+          }
         }
       }
     };
@@ -151,10 +174,35 @@ const ProjectDetails: React.FC = () => {
     }));
   }, [metrics.npv, sliders]);
 
-  // Update financial metrics when sliders change
+  // Calculate mineral price effect
+  const calculateMineralPriceEffect = () => {
+    if (!mineralPrices.length) return 1;
+    
+    // Average out the effect based on number of minerals
+    const totalEffect = mineralPrices.reduce((sum, mineral) => {
+      // This is a simplified calculation based on the mineral type
+      let basePrice = 0;
+      switch (mineral.mineral) {
+        case 'gold': basePrice = 1800; break;
+        case 'silver': basePrice = 23; break;
+        case 'copper': basePrice = 3.5; break;
+        case 'zinc': basePrice = 1.2; break;
+        case 'lithium': basePrice = 6000; break;
+        case 'nickel': basePrice = 1600; break;
+        case 'uranium': basePrice = 50; break;
+      }
+      
+      // Effect is ratio of current price to base price
+      return sum + (mineral.price / basePrice);
+    }, 0);
+    
+    return totalEffect / mineralPrices.length;
+  };
+
+  // Update financial metrics when sliders or mineral prices change
   useEffect(() => {
     const calculateMetrics = () => {
-      const mineralPrice = sliders.find(s => s.id === 'mineral-price')?.value || 50;
+      const mineralPriceEffect = calculateMineralPriceEffect();
       const depositSize = sliders.find(s => s.id === 'deposit-size')?.value || 500;
       const mineralQuality = sliders.find(s => s.id === 'mineral-quality')?.value || 70;
       const capexInvestment = sliders.find(s => s.id === 'capex-investment')?.value || 50;
@@ -164,14 +212,13 @@ const ProjectDetails: React.FC = () => {
       const baseNpv = 63000000;
       
       // Apply slider effects
-      const priceEffect = (mineralPrice / 50) * 0.5; // 50% impact
       const depositEffect = (depositSize / 500) * 0.7; // 70% impact
       const qualityEffect = (mineralQuality / 70) * 0.3; // 30% impact
       const capexEffect = (1 - (capexInvestment / 50)) * 0.4; // 40% impact (inverse)
       const timeEffect = (1 - (projectTime / 5)) * 0.2; // 20% impact (inverse)
       
       // Combined multiplier for NPV
-      const multiplier = 0.3 + (priceEffect + depositEffect + qualityEffect + capexEffect + timeEffect);
+      const multiplier = 0.3 + (mineralPriceEffect * 0.5 + depositEffect + qualityEffect + capexEffect + timeEffect);
       const newNpv = Math.round(baseNpv * multiplier);
       
       // Calculate IRR based on NPV
@@ -194,7 +241,7 @@ const ProjectDetails: React.FC = () => {
     };
 
     calculateMetrics();
-  }, [sliders]);
+  }, [sliders, mineralPrices]);
 
   // Handle slider change
   const handleSliderChange = (sliderId: string, newValue: number[]) => {
@@ -268,6 +315,28 @@ const ProjectDetails: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4">Project Inputs</h2>
           <p className="text-gray-500 mb-4">Adjust parameters to see impact on project metrics</p>
           
+          {/* Mineral Prices Section */}
+          <div className="mb-8 border-b pb-6">
+            <h3 className="font-medium mb-4">Mineral Prices</h3>
+            
+            <div className="space-y-3">
+              {mineralPrices.map((mineralPrice, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <span className="capitalize">{mineralPrice.mineral}</span>
+                  <span className="font-semibold">{mineralPrice.price} {mineralPrice.unit}</span>
+                </div>
+              ))}
+              
+              {mineralPrices.length === 0 && (
+                <p className="text-gray-500">No minerals selected for this project</p>
+              )}
+            </div>
+            
+            <p className="text-xs text-gray-500 italic mt-4">
+              These are live prices and are subject to fluctuate based on market conditions.
+            </p>
+          </div>
+          
           <div className="space-y-8">
             {sliders.map(slider => (
               <div key={slider.id} className="space-y-2">
@@ -331,6 +400,7 @@ const ProjectDetails: React.FC = () => {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+
                 <div className="mt-8 p-4 bg-gray-50 rounded-md border">
                   <h3 className="font-medium mb-2">NPV Analysis</h3>
                   <p className="text-sm text-gray-600">
@@ -436,10 +506,10 @@ const ProjectDetails: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-600 mb-2">
-              {project.cost ? 'Estimated drilling cost from the exploration site analysis:' : 'Drilling cost:'}
+              {project.cost === 'Not calculated' ? 'Drilling cost:' : 'Estimated drilling cost from the exploration site analysis:'}
             </p>
             <p className="text-xl font-bold text-mining-primary">
-              {project.cost || 'Not calculated using Drilling Cost Estimator'}
+              {project.cost === 'Not calculated' ? 'Not calculated using Drilling Cost Estimator' : project.cost}
             </p>
             {project.costRange && (
               <p className="text-sm text-gray-500 mt-1">
@@ -448,7 +518,7 @@ const ProjectDetails: React.FC = () => {
             )}
           </div>
           
-          {project.cost && (
+          {project.cost !== 'Not calculated' && (
             <div className="bg-gray-50 p-4 rounded-md">
               <h4 className="font-medium mb-2 text-sm">Drilling Details</h4>
               <ul className="space-y-2 text-sm text-gray-600">

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MineralType } from '@/pages/DrillingCostEstimator';
 
-const statusOptions = ['in progress', 'completed', 'planning'] as const;
+const statusOptions = ['in progress', 'completed', 'planning', 'N/A'] as const;
 type StatusType = typeof statusOptions[number];
 
 const Home: React.FC = () => {
@@ -19,8 +19,6 @@ const Home: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
-    location: '',
-    country: '',
     latitude: '',
     longitude: '',
     minerals: [] as MineralType[]
@@ -55,8 +53,8 @@ const Home: React.FC = () => {
   };
 
   const handleCreateProject = () => {
-    if (!newProject.name || !newProject.location || !newProject.country || 
-        !newProject.latitude || !newProject.longitude || newProject.minerals.length === 0) {
+    if (!newProject.name || !newProject.latitude || !newProject.longitude || 
+        newProject.minerals.length === 0) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields and select at least one mineral",
@@ -71,14 +69,19 @@ const Home: React.FC = () => {
     const npvRange = `$${minNpv}M - $${maxNpv}M`;
     
     // Pick random status for drilling operations
+    const statusIndex = Math.floor(Math.random() * 3); // 0, 1, or 2 for the three valid statuses
     const randomStatus: StatusType = 'N/A';
+
+    // Generate location and country based on coordinates (mock implementation)
+    const location = `Sector ${Math.floor(Math.random() * 20) + 1}`;
+    const country = ['USA', 'Canada', 'Australia', 'Chile', 'Peru'][Math.floor(Math.random() * 5)];
 
     const newProjectData: ProjectData = {
       id: Date.now().toString(),
       name: newProject.name,
-      location: newProject.location,
-      country: newProject.country,
-      cost: 'Manual Entry',
+      location: location,
+      country: country,
+      cost: 'Not calculated',
       npvRange,
       minerals: newProject.minerals,
       createdDate: new Date().toISOString(),
@@ -97,8 +100,6 @@ const Home: React.FC = () => {
     // Reset form and close dialog
     setNewProject({
       name: '',
-      location: '',
-      country: '',
       latitude: '',
       longitude: '',
       minerals: []
@@ -172,27 +173,6 @@ const Home: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="location">Location</Label>
-                <Input 
-                  id="location" 
-                  value={newProject.location} 
-                  onChange={(e) => setNewProject({...newProject, location: e.target.value})} 
-                  placeholder="City/Region"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="country">Country</Label>
-                <Input 
-                  id="country" 
-                  value={newProject.country} 
-                  onChange={(e) => setNewProject({...newProject, country: e.target.value})} 
-                  placeholder="Country"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
                 <Label htmlFor="latitude">Latitude</Label>
                 <Input 
                   id="latitude" 
@@ -215,7 +195,10 @@ const Home: React.FC = () => {
             <div className="grid gap-2">
               <Label>Target Minerals</Label>
               <div className="flex gap-2">
-                <Select value={selectedMineral} onValueChange={setSelectedMineral}>
+                <Select 
+                  value={selectedMineral} 
+                  onValueChange={(value: MineralType | '') => setSelectedMineral(value)}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select mineral" />
                   </SelectTrigger>
