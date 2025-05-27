@@ -65,13 +65,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
         {project.costRange && (
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">Cost Range:</span>
-            <span className="font-bold text-gray-700">{project.costRange}</span>
+            <span className="text-sm text-gray-700">{project.costRange}</span>
           </div>
         )}
         {project.npvRange && (
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">NPV Range:</span>
-            <span className="font-bold text-gray-700">{project.npvRange}</span>
+            <span className="text-sm text-gray-700">{project.npvRange}</span>
           </div>
         )}
       </div>
@@ -85,12 +85,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
       <div className="flex justify-between items-center mt-6">
         <div className="flex items-center">
           <span className="text-sm text-gray-500 mr-2">Created: {formatDate(project.createdDate)}</span>
-          <div>
-            <span className="text-sm text-gray-500">Drilling operations: </span>
+          {project.status && (
             <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-              {project.status}
+              {project.status} {project.status !== 'N/A' ? 'drilling operations' : ''}
             </span>
-          </div>
+          )}
         </div>
         <button 
           className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded transition-colors"
