@@ -21,8 +21,7 @@ const Home: React.FC = () => {
     name: '',
     location: '',
     country: '',
-    latitude: '',
-    longitude: '',
+    coordinates: '',
     minerals: [] as MineralType[]
   });
   const [selectedMineral, setSelectedMineral] = useState<MineralType | ''>('');
@@ -55,8 +54,7 @@ const Home: React.FC = () => {
   };
 
   const handleCreateProject = () => {
-    if (!newProject.name || !newProject.location || !newProject.country || 
-        !newProject.latitude || !newProject.longitude || newProject.minerals.length === 0) {
+    if (!newProject.name || !newProject.coordinates || newProject.minerals.length === 0) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields and select at least one mineral",
@@ -65,24 +63,26 @@ const Home: React.FC = () => {
       return;
     }
 
+    // Auto-fill location and country based on coordinates
+    // In a real app, this would use a geocoding API
+    const location = "Auto-filled Location";
+    const country = "Auto-filled Country";
+
     // Generate random NPV range based on minerals
     const minNpv = Math.floor(Math.random() * 50) + 30; // 30-80 million
     const maxNpv = minNpv + Math.floor(Math.random() * 50) + 10; // 10-60 million more than minNpv
     const npvRange = `$${minNpv}M - $${maxNpv}M`;
-    
-    // Pick random status for drilling operations
-    const randomStatus: StatusType = 'N/A';
 
     const newProjectData: ProjectData = {
       id: Date.now().toString(),
       name: newProject.name,
-      location: newProject.location,
-      country: newProject.country,
-      cost: 'Manual Entry',
+      location,
+      country,
+      cost: 'Not calculated using Drilling Cost Estimator',
       npvRange,
       minerals: newProject.minerals,
       createdDate: new Date().toISOString(),
-      status: randomStatus,
+      status: 'N/A' as any, // Manual projects have N/A status
     };
 
     const updatedProjects = [...projects, newProjectData];
@@ -99,8 +99,7 @@ const Home: React.FC = () => {
       name: '',
       location: '',
       country: '',
-      latitude: '',
-      longitude: '',
+      coordinates: '',
       minerals: []
     });
     setSelectedMineral('');
@@ -170,52 +169,20 @@ const Home: React.FC = () => {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="location">Location</Label>
-                <Input 
-                  id="location" 
-                  value={newProject.location} 
-                  onChange={(e) => setNewProject({...newProject, location: e.target.value})} 
-                  placeholder="City/Region"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="country">Country</Label>
-                <Input 
-                  id="country" 
-                  value={newProject.country} 
-                  onChange={(e) => setNewProject({...newProject, country: e.target.value})} 
-                  placeholder="Country"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="latitude">Latitude</Label>
-                <Input 
-                  id="latitude" 
-                  value={newProject.latitude} 
-                  onChange={(e) => setNewProject({...newProject, latitude: e.target.value})} 
-                  placeholder="e.g. 45.1786"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="longitude">Longitude</Label>
-                <Input 
-                  id="longitude" 
-                  value={newProject.longitude} 
-                  onChange={(e) => setNewProject({...newProject, longitude: e.target.value})} 
-                  placeholder="e.g. -123.121"
-                />
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="coordinates">Coordinates</Label>
+              <Input 
+                id="coordinates" 
+                value={newProject.coordinates} 
+                onChange={(e) => setNewProject({...newProject, coordinates: e.target.value})} 
+                placeholder="e.g. 45.1786, -123.121"
+              />
             </div>
             
             <div className="grid gap-2">
               <Label>Target Minerals</Label>
               <div className="flex gap-2">
-                <Select value={selectedMineral} onValueChange={setSelectedMineral}>
+                <Select value={selectedMineral} onValueChange={(value: string) => setSelectedMineral(value as MineralType | '')}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select mineral" />
                   </SelectTrigger>

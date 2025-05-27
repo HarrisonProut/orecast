@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
@@ -29,15 +28,15 @@ interface SliderConfig {
   unit: string;
 }
 
-// Define mineral price data
+// Define mineral price data with dummy figures
 const mineralPrices: Record<MineralType, { price: number; unit: string }> = {
-  'Gold': { price: 2045.30, unit: '$/oz' },
-  'Silver': { price: 24.85, unit: '$/oz' },
-  'Copper': { price: 8750, unit: '$/tonne' },
-  'Zinc': { price: 2580, unit: '$/tonne' },
-  'Lithium': { price: 14500, unit: '$/tonne' },
-  'Nickel': { price: 18200, unit: '$/tonne' },
-  'Uranium': { price: 85, unit: '$/lb' }
+  'gold': { price: 2048.75, unit: '$/oz' },
+  'silver': { price: 24.92, unit: '$/oz' },
+  'copper': { price: 8765, unit: '$/tonne' },
+  'zinc': { price: 2595, unit: '$/tonne' },
+  'lithium': { price: 14650, unit: '$/tonne' },
+  'nickel': { price: 18350, unit: '$/tonne' },
+  'uranium': { price: 86.5, unit: '$/lb' }
 };
 
 const ProjectDetails: React.FC = () => {
@@ -218,13 +217,13 @@ const ProjectDetails: React.FC = () => {
   // Get mineral icon and color
   const getMineralColor = (mineral: MineralType): string => {
     switch (mineral) {
-      case 'Gold': return 'text-yellow-600';
-      case 'Silver': return 'text-gray-600';
-      case 'Copper': return 'text-orange-600';
-      case 'Zinc': return 'text-blue-600';
-      case 'Lithium': return 'text-purple-600';
-      case 'Nickel': return 'text-green-600';
-      case 'Uranium': return 'text-red-600';
+      case 'gold': return 'text-yellow-600';
+      case 'silver': return 'text-gray-600';
+      case 'copper': return 'text-orange-600';
+      case 'zinc': return 'text-blue-600';
+      case 'lithium': return 'text-purple-600';
+      case 'nickel': return 'text-green-600';
+      case 'uranium': return 'text-red-600';
       default: return 'text-gray-600';
     }
   };
@@ -290,7 +289,7 @@ const ProjectDetails: React.FC = () => {
                 {project.minerals.map(mineral => (
                   <div key={mineral} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
                     <span className={`font-medium ${getMineralColor(mineral)}`}>
-                      {mineral}
+                      {mineral.charAt(0).toUpperCase() + mineral.slice(1)}
                     </span>
                     <span className="font-semibold">
                       {mineralPrices[mineral]?.price.toLocaleString()} {mineralPrices[mineral]?.unit}
@@ -463,18 +462,22 @@ const ProjectDetails: React.FC = () => {
       <div className="mt-8 border rounded-lg p-6 bg-white shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Exploration Drilling Cost</h2>
-          <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-            {project.status || 'in progress'} drilling operations
-          </span>
+          {project.status && project.status !== 'N/A' && (
+            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+              {project.status} drilling operations
+            </span>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-600 mb-2">
-              {project.cost ? 'Estimated drilling cost from the exploration site analysis:' : 'Drilling cost:'}
+              {project.cost && project.cost !== 'Not calculated using Drilling Cost Estimator' 
+                ? 'Estimated drilling cost from the exploration site analysis:' 
+                : 'Drilling cost:'}
             </p>
             <p className="text-xl font-bold text-mining-primary">
-              {project.cost || 'Not calculated using Drilling Cost Estimator'}
+              {project.cost}
             </p>
             {project.costRange && (
               <p className="text-sm text-gray-500 mt-1">
@@ -483,7 +486,7 @@ const ProjectDetails: React.FC = () => {
             )}
           </div>
           
-          {project.cost && (
+          {project.cost && project.cost !== 'Not calculated using Drilling Cost Estimator' && (
             <div className="bg-gray-50 p-4 rounded-md">
               <h4 className="font-medium mb-2 text-sm">Drilling Details</h4>
               <ul className="space-y-2 text-sm text-gray-600">

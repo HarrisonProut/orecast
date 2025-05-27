@@ -42,6 +42,19 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
     navigate(`/project/${project.id}`);
   };
 
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'in progress':
+        return 'text-yellow-800';
+      case 'completed':
+        return 'text-green-800';
+      case 'planning':
+        return 'text-blue-800';
+      default:
+        return 'text-gray-800';
+    }
+  };
+
   return (
     <div className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
@@ -60,18 +73,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center">
           <span className="text-gray-500 mr-2">Drilling Cost:</span>
-          <span className="font-semibold text-lg text-mining-primary">{project.cost}</span>
+          <span className="font-bold text-lg text-mining-primary">{project.cost}</span>
         </div>
         {project.costRange && (
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">Cost Range:</span>
-            <span className="text-sm text-gray-700">{project.costRange}</span>
+            <span className="text-sm font-bold text-gray-700">{project.costRange}</span>
           </div>
         )}
         {project.npvRange && (
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">NPV Range:</span>
-            <span className="text-sm text-gray-700">{project.npvRange}</span>
+            <span className="text-sm font-bold text-gray-700">{project.npvRange}</span>
           </div>
         )}
       </div>
@@ -83,13 +96,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
       </div>
       
       <div className="flex justify-between items-center mt-6">
-        <div className="flex items-center">
-          <span className="text-sm text-gray-500 mr-2">Created: {formatDate(project.createdDate)}</span>
-          {project.status && (
-            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-              {project.status} {project.status !== 'N/A' ? 'drilling operations' : ''}
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-gray-500">Created: {formatDate(project.createdDate)}</span>
+          <div className="flex items-center text-sm">
+            <span className="text-gray-700">Drilling operations: </span>
+            <span className={`ml-1 ${getStatusColor(project.status)}`}>
+              {project.status === 'N/A' ? 'N/A' : project.status}
             </span>
-          )}
+          </div>
         </div>
         <button 
           className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded transition-colors"
