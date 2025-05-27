@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus } from 'lucide-react';
@@ -187,13 +186,12 @@ const Home: React.FC = () => {
                     <SelectValue placeholder="Select mineral" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gold">Gold</SelectItem>
-                    <SelectItem value="silver">Silver</SelectItem>
-                    <SelectItem value="copper">Copper</SelectItem>
-                    <SelectItem value="zinc">Zinc</SelectItem>
-                    <SelectItem value="lithium">Lithium</SelectItem>
-                    <SelectItem value="nickel">Nickel</SelectItem>
-                    <SelectItem value="uranium">Uranium</SelectItem>
+                    <SelectItem value="Copper">Copper</SelectItem>
+                    <SelectItem value="Gold">Gold</SelectItem>
+                    <SelectItem value="Silver">Silver</SelectItem>
+                    <SelectItem value="Cobalt">Cobalt</SelectItem>
+                    <SelectItem value="Manganese">Manganese</SelectItem>
+                    <SelectItem value="Iron">Iron</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button onClick={handleAddMineral} type="button" disabled={!selectedMineral}>Add</Button>
@@ -206,7 +204,7 @@ const Home: React.FC = () => {
                       key={mineral} 
                       className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1"
                     >
-                      <span>{mineral.charAt(0).toUpperCase() + mineral.slice(1)}</span>
+                      <span>{mineral}</span>
                       <button 
                         onClick={() => handleRemoveMineral(mineral)}
                         className="text-gray-500 hover:text-red-500"

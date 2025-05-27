@@ -24,19 +24,19 @@ interface SliderConfig {
   min: number;
   max: number;
   step: number;
-  value: number;
+  value: number | [number, number];
   unit: string;
+  isRange: boolean;
 }
 
 // Define mineral price data with dummy figures
 const mineralPrices: Record<MineralType, { price: number; unit: string }> = {
-  'gold': { price: 2048.75, unit: '$/oz' },
-  'silver': { price: 24.92, unit: '$/oz' },
-  'copper': { price: 8765, unit: '$/tonne' },
-  'zinc': { price: 2595, unit: '$/tonne' },
-  'lithium': { price: 14650, unit: '$/tonne' },
-  'nickel': { price: 18350, unit: '$/tonne' },
-  'uranium': { price: 86.5, unit: '$/lb' }
+  'Copper': { price: 8765, unit: '$/tonne' },
+  'Gold': { price: 2048.75, unit: '$/oz' },
+  'Silver': { price: 24.92, unit: '$/oz' },
+  'Cobalt': { price: 55000, unit: '$/tonne' },
+  'Manganese': { price: 4200, unit: '$/tonne' },
+  'Iron': { price: 120, unit: '$/tonne' }
 };
 
 const ProjectDetails: React.FC = () => {
@@ -50,7 +50,7 @@ const ProjectDetails: React.FC = () => {
     paybackData: []
   });
 
-  // Define sliders with initial values
+  // Define sliders with initial values and updated ranges
   const [sliders, setSliders] = useState<SliderConfig[]>([
     {
       id: 'deposit-size',
@@ -59,34 +59,38 @@ const ProjectDetails: React.FC = () => {
       max: 1000,
       step: 10,
       value: 500,
-      unit: 'tonnes'
+      unit: 'tonnes',
+      isRange: false
     },
     {
       id: 'mineral-quality',
       name: 'Mineral Quality',
       min: 0,
-      max: 100,
-      step: 1,
-      value: 70,
-      unit: '%'
+      max: 20,
+      step: 0.1,
+      value: 7,
+      unit: '%',
+      isRange: false
     },
     {
       id: 'capex-investment',
       name: 'CAPEX Investment',
       min: 0,
-      max: 100,
-      step: 1,
-      value: 50,
-      unit: 'M$'
+      max: 1000,
+      step: 10,
+      value: 500,
+      unit: 'M$',
+      isRange: false
     },
     {
       id: 'time-of-project',
       name: 'Time of Project',
       min: 1,
-      max: 10,
+      max: 20,
       step: 1,
       value: 5,
-      unit: 'years'
+      unit: 'years',
+      isRange: false
     }
   ]);
 
@@ -110,7 +114,9 @@ const ProjectDetails: React.FC = () => {
   useEffect(() => {
     // Generate NPV data over years
     const generateNpvData = () => {
-      const years = sliders.find(s => s.id === 'time-of-project')?.value || 5;
+      const years = typeof sliders.find(s => s.id === 'time-of-project')?.value === 'number'
+        ? sliders.find(s => s.id === 'time-of-project')?.value as number || 5
+        : (sliders.find(s => s.id === 'time-of-project')?.value as [number, number])?.[0] || 5;
       const data = [];
       
       // Initial investment (negative)
@@ -127,7 +133,9 @@ const ProjectDetails: React.FC = () => {
     
     // Generate payback data
     const generatePaybackData = () => {
-      const years = sliders.find(s => s.id === 'time-of-project')?.value || 5;
+      const years = typeof sliders.find(s => s.id === 'time-of-project')?.value === 'number'
+        ? sliders.find(s => s.id === 'time-of-project')?.value as number || 5
+        : (sliders.find(s => s.id === 'time-of-project')?.value as [number, number])?.[0] || 5;
       const data = [];
       let cumulativeValue = -15000000; // Initial investment
       
@@ -155,18 +163,29 @@ const ProjectDetails: React.FC = () => {
   // Update financial metrics when sliders change
   useEffect(() => {
     const calculateMetrics = () => {
-      const depositSize = sliders.find(s => s.id === 'deposit-size')?.value || 500;
-      const mineralQuality = sliders.find(s => s.id === 'mineral-quality')?.value || 70;
-      const capexInvestment = sliders.find(s => s.id === 'capex-investment')?.value || 50;
-      const projectTime = sliders.find(s => s.id === 'time-of-project')?.value || 5;
+      const depositSize = typeof sliders.find(s => s.id === 'deposit-size')?.value === 'number' 
+        ? sliders.find(s => s.id === 'deposit-size')?.value as number || 500
+        : (sliders.find(s => s.id === 'deposit-size')?.value as [number, number])?.[0] || 500;
+      
+      const mineralQuality = typeof sliders.find(s => s.id === 'mineral-quality')?.value === 'number'
+        ? sliders.find(s => s.id === 'mineral-quality')?.value as number || 7
+        : (sliders.find(s => s.id === 'mineral-quality')?.value as [number, number])?.[0] || 7;
+      
+      const capexInvestment = typeof sliders.find(s => s.id === 'capex-investment')?.value === 'number'
+        ? sliders.find(s => s.id === 'capex-investment')?.value as number || 500
+        : (sliders.find(s => s.id === 'capex-investment')?.value as [number, number])?.[0] || 500;
+      
+      const projectTime = typeof sliders.find(s => s.id === 'time-of-project')?.value === 'number'
+        ? sliders.find(s => s.id === 'time-of-project')?.value as number || 5
+        : (sliders.find(s => s.id === 'time-of-project')?.value as [number, number])?.[0] || 5;
 
       // Base NPV calculation with some randomization
       const baseNpv = 63000000;
       
       // Apply slider effects
       const depositEffect = (depositSize / 500) * 0.7; // 70% impact
-      const qualityEffect = (mineralQuality / 70) * 0.3; // 30% impact
-      const capexEffect = (1 - (capexInvestment / 50)) * 0.4; // 40% impact (inverse)
+      const qualityEffect = (mineralQuality / 7) * 0.3; // 30% impact
+      const capexEffect = (1 - (capexInvestment / 500)) * 0.4; // 40% impact (inverse)
       const timeEffect = (1 - (projectTime / 5)) * 0.2; // 20% impact (inverse)
       
       // Combined multiplier for NPV
@@ -200,7 +219,27 @@ const ProjectDetails: React.FC = () => {
     setSliders(prev => 
       prev.map(slider => 
         slider.id === sliderId 
-          ? { ...slider, value: newValue[0] } 
+          ? { 
+              ...slider, 
+              value: slider.isRange ? [newValue[0], newValue[1]] : newValue[0] 
+            } 
+          : slider
+      )
+    );
+  };
+
+  // Toggle slider range mode
+  const toggleSliderRange = (sliderId: string) => {
+    setSliders(prev => 
+      prev.map(slider => 
+        slider.id === sliderId 
+          ? { 
+              ...slider, 
+              isRange: !slider.isRange,
+              value: !slider.isRange 
+                ? [typeof slider.value === 'number' ? slider.value : slider.value[0], typeof slider.value === 'number' ? slider.value : slider.value[1]]
+                : typeof slider.value === 'number' ? slider.value : slider.value[0]
+            } 
           : slider
       )
     );
@@ -217,14 +256,13 @@ const ProjectDetails: React.FC = () => {
   // Get mineral icon and color
   const getMineralColor = (mineral: MineralType): string => {
     switch (mineral) {
-      case 'gold': return 'text-yellow-600';
-      case 'silver': return 'text-gray-600';
-      case 'copper': return 'text-orange-600';
-      case 'zinc': return 'text-blue-600';
-      case 'lithium': return 'text-purple-600';
-      case 'nickel': return 'text-green-600';
-      case 'uranium': return 'text-red-600';
-      default: return 'text-gray-600';
+      case 'Gold': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'Silver': return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'Copper': return 'text-orange-600 bg-orange-50 border-orange-200';
+      case 'Cobalt': return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'Manganese': return 'text-purple-600 bg-purple-50 border-purple-200';
+      case 'Iron': return 'text-red-600 bg-red-50 border-red-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
 
@@ -287,9 +325,9 @@ const ProjectDetails: React.FC = () => {
               <h3 className="text-lg font-medium">Mineral Prices (Live)</h3>
               <div className="grid grid-cols-1 gap-4">
                 {project.minerals.map(mineral => (
-                  <div key={mineral} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                    <span className={`font-medium ${getMineralColor(mineral)}`}>
-                      {mineral.charAt(0).toUpperCase() + mineral.slice(1)}
+                  <div key={mineral} className={`flex justify-between items-center p-3 rounded-md border ${getMineralColor(mineral)}`}>
+                    <span className={`font-medium ${getMineralColor(mineral).split(' ')[0]}`}>
+                      {mineral}
                     </span>
                     <span className="font-semibold">
                       {mineralPrices[mineral]?.price.toLocaleString()} {mineralPrices[mineral]?.unit}
@@ -305,20 +343,31 @@ const ProjectDetails: React.FC = () => {
             {/* Regular Sliders */}
             {sliders.map(slider => (
               <div key={slider.id} className="space-y-2">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <label htmlFor={slider.id} className="text-sm font-medium">
                     {slider.name}
                   </label>
-                  <span className="text-sm">
-                    {slider.value} {slider.unit}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">
+                      {slider.isRange 
+                        ? `${Array.isArray(slider.value) ? slider.value[0] : slider.value} - ${Array.isArray(slider.value) ? slider.value[1] : slider.value} ${slider.unit}`
+                        : `${Array.isArray(slider.value) ? slider.value[0] : slider.value} ${slider.unit}`
+                      }
+                    </span>
+                    <button
+                      onClick={() => toggleSliderRange(slider.id)}
+                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
+                    >
+                      {slider.isRange ? 'Single' : 'Range'}
+                    </button>
+                  </div>
                 </div>
                 <Slider
                   id={slider.id}
                   min={slider.min}
                   max={slider.max}
                   step={slider.step}
-                  value={[slider.value]}
+                  value={Array.isArray(slider.value) ? slider.value : [slider.value]}
                   onValueChange={(value) => handleSliderChange(slider.id, value)}
                   className="py-2"
                 />

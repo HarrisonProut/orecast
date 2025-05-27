@@ -73,18 +73,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center">
           <span className="text-gray-500 mr-2">Drilling Cost:</span>
-          <span className="font-bold text-lg text-mining-primary">{project.cost}</span>
+          <span className="font-bold text-base text-mining-primary">
+            {project.cost === 'Not calculated using Drilling Cost Estimator' 
+              ? <span className="text-sm">{project.cost}</span>
+              : project.cost
+            }
+          </span>
         </div>
         {project.costRange && (
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">Cost Range:</span>
-            <span className="text-sm font-bold text-gray-700">{project.costRange}</span>
+            <span className="text-base font-bold text-gray-700">{project.costRange}</span>
           </div>
         )}
         {project.npvRange && (
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">NPV Range:</span>
-            <span className="text-sm font-bold text-gray-700">{project.npvRange}</span>
+            <span className="text-base font-bold text-gray-700">{project.npvRange}</span>
           </div>
         )}
       </div>
