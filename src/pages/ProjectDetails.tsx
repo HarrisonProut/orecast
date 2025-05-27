@@ -29,6 +29,17 @@ interface SliderConfig {
   unit: string;
 }
 
+// Define mineral price data
+const mineralPrices: Record<MineralType, { price: number; unit: string }> = {
+  'Gold': { price: 2045.30, unit: '$/oz' },
+  'Silver': { price: 24.85, unit: '$/oz' },
+  'Copper': { price: 8750, unit: '$/tonne' },
+  'Zinc': { price: 2580, unit: '$/tonne' },
+  'Lithium': { price: 14500, unit: '$/tonne' },
+  'Nickel': { price: 18200, unit: '$/tonne' },
+  'Uranium': { price: 85, unit: '$/lb' }
+};
+
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -42,15 +53,6 @@ const ProjectDetails: React.FC = () => {
 
   // Define sliders with initial values
   const [sliders, setSliders] = useState<SliderConfig[]>([
-    {
-      id: 'mineral-price',
-      name: 'Mineral Price',
-      min: 0,
-      max: 100,
-      step: 1,
-      value: 50, // Start in the middle
-      unit: '% of current price'
-    },
     {
       id: 'deposit-size',
       name: 'Deposit Size',
@@ -154,7 +156,6 @@ const ProjectDetails: React.FC = () => {
   // Update financial metrics when sliders change
   useEffect(() => {
     const calculateMetrics = () => {
-      const mineralPrice = sliders.find(s => s.id === 'mineral-price')?.value || 50;
       const depositSize = sliders.find(s => s.id === 'deposit-size')?.value || 500;
       const mineralQuality = sliders.find(s => s.id === 'mineral-quality')?.value || 70;
       const capexInvestment = sliders.find(s => s.id === 'capex-investment')?.value || 50;
@@ -164,14 +165,13 @@ const ProjectDetails: React.FC = () => {
       const baseNpv = 63000000;
       
       // Apply slider effects
-      const priceEffect = (mineralPrice / 50) * 0.5; // 50% impact
       const depositEffect = (depositSize / 500) * 0.7; // 70% impact
       const qualityEffect = (mineralQuality / 70) * 0.3; // 30% impact
       const capexEffect = (1 - (capexInvestment / 50)) * 0.4; // 40% impact (inverse)
       const timeEffect = (1 - (projectTime / 5)) * 0.2; // 20% impact (inverse)
       
       // Combined multiplier for NPV
-      const multiplier = 0.3 + (priceEffect + depositEffect + qualityEffect + capexEffect + timeEffect);
+      const multiplier = 0.3 + (depositEffect + qualityEffect + capexEffect + timeEffect);
       const newNpv = Math.round(baseNpv * multiplier);
       
       // Calculate IRR based on NPV
@@ -213,6 +213,20 @@ const ProjectDetails: React.FC = () => {
       return `$${(value / 1000000).toFixed(1)}M`;
     }
     return `$${value.toLocaleString()}`;
+  };
+
+  // Get mineral icon and color
+  const getMineralColor = (mineral: MineralType): string => {
+    switch (mineral) {
+      case 'Gold': return 'text-yellow-600';
+      case 'Silver': return 'text-gray-600';
+      case 'Copper': return 'text-orange-600';
+      case 'Zinc': return 'text-blue-600';
+      case 'Lithium': return 'text-purple-600';
+      case 'Nickel': return 'text-green-600';
+      case 'Uranium': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
   };
 
   if (!project) {
@@ -269,6 +283,27 @@ const ProjectDetails: React.FC = () => {
           <p className="text-gray-500 mb-4">Adjust parameters to see impact on project metrics</p>
           
           <div className="space-y-8">
+            {/* Mineral Prices Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Mineral Prices (Live)</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {project.minerals.map(mineral => (
+                  <div key={mineral} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                    <span className={`font-medium ${getMineralColor(mineral)}`}>
+                      {mineral}
+                    </span>
+                    <span className="font-semibold">
+                      {mineralPrices[mineral]?.price.toLocaleString()} {mineralPrices[mineral]?.unit}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 italic">
+                * These are live prices and are subject to fluctuation
+              </p>
+            </div>
+            
+            {/* Regular Sliders */}
             {sliders.map(slider => (
               <div key={slider.id} className="space-y-2">
                 <div className="flex justify-between">
