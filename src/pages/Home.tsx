@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus } from 'lucide-react';
@@ -13,14 +14,27 @@ import { MineralType } from '@/pages/DrillingCostEstimator';
 const statusOptions = ['in progress', 'completed', 'planning'] as const;
 type StatusType = typeof statusOptions[number];
 
+// Random location data
+const randomLocations = [
+  { location: "Perth Basin", country: "Australia" },
+  { location: "Pilbara Region", country: "Australia" },
+  { location: "Golden Triangle", country: "Canada" },
+  { location: "Atacama Desert", country: "Chile" },
+  { location: "Witwatersrand Basin", country: "South Africa" },
+  { location: "Nevada Mining District", country: "United States" },
+  { location: "Sudbury Basin", country: "Canada" },
+  { location: "Kupferberg", country: "Germany" },
+  { location: "Outback Plains", country: "Australia" },
+  { location: "Rocky Mountains", country: "United States" }
+];
+
 const Home: React.FC = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
-    location: '',
-    country: '',
-    coordinates: '',
+    latitude: '',
+    longitude: '',
     minerals: [] as MineralType[]
   });
   const [selectedMineral, setSelectedMineral] = useState<MineralType | ''>('');
@@ -53,7 +67,7 @@ const Home: React.FC = () => {
   };
 
   const handleCreateProject = () => {
-    if (!newProject.name || !newProject.coordinates || newProject.minerals.length === 0) {
+    if (!newProject.name || !newProject.latitude || !newProject.longitude || newProject.minerals.length === 0) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields and select at least one mineral",
@@ -62,10 +76,8 @@ const Home: React.FC = () => {
       return;
     }
 
-    // Auto-fill location and country based on coordinates
-    // In a real app, this would use a geocoding API
-    const location = "Auto-filled Location";
-    const country = "Auto-filled Country";
+    // Generate random location and country
+    const randomLocationData = randomLocations[Math.floor(Math.random() * randomLocations.length)];
 
     // Generate random NPV range based on minerals
     const minNpv = Math.floor(Math.random() * 50) + 30; // 30-80 million
@@ -75,8 +87,8 @@ const Home: React.FC = () => {
     const newProjectData: ProjectData = {
       id: Date.now().toString(),
       name: newProject.name,
-      location,
-      country,
+      location: randomLocationData.location,
+      country: randomLocationData.country,
       cost: 'Not calculated using Drilling Cost Estimator',
       npvRange,
       minerals: newProject.minerals,
@@ -96,9 +108,8 @@ const Home: React.FC = () => {
     // Reset form and close dialog
     setNewProject({
       name: '',
-      location: '',
-      country: '',
-      coordinates: '',
+      latitude: '',
+      longitude: '',
       minerals: []
     });
     setSelectedMineral('');
@@ -168,14 +179,25 @@ const Home: React.FC = () => {
               />
             </div>
             
-            <div className="grid gap-2">
-              <Label htmlFor="coordinates">Coordinates</Label>
-              <Input 
-                id="coordinates" 
-                value={newProject.coordinates} 
-                onChange={(e) => setNewProject({...newProject, coordinates: e.target.value})} 
-                placeholder="e.g. 45.1786, -123.121"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input 
+                  id="latitude" 
+                  value={newProject.latitude} 
+                  onChange={(e) => setNewProject({...newProject, latitude: e.target.value})} 
+                  placeholder="e.g. 45.1786"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input 
+                  id="longitude" 
+                  value={newProject.longitude} 
+                  onChange={(e) => setNewProject({...newProject, longitude: e.target.value})} 
+                  placeholder="e.g. -123.121"
+                />
+              </div>
             </div>
             
             <div className="grid gap-2">

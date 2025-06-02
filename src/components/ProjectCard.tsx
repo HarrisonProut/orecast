@@ -17,6 +17,7 @@ export interface ProjectData {
   minerals: MineralType[];
   createdDate: string;
   status?: 'in progress' | 'completed' | 'planning' | 'N/A'; // Extended status options
+  fromDrillingEstimator?: boolean; // Track if created from drilling cost estimator
 }
 
 interface ProjectCardProps {
@@ -55,6 +56,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
     }
   };
 
+  // Determine the status display based on whether it came from drilling estimator
+  const getDisplayStatus = () => {
+    if (project.fromDrillingEstimator) {
+      return 'in progress';
+    }
+    return project.status === 'N/A' ? 'N/A' : project.status;
+  };
+
   return (
     <div className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
@@ -73,11 +82,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center">
           <span className="text-gray-500 mr-2">Drilling Cost:</span>
-          <span className="font-bold text-base text-mining-primary">
-            {project.cost === 'Not calculated using Drilling Cost Estimator' 
-              ? <span className="text-sm">{project.cost}</span>
-              : project.cost
-            }
+          <span className={`font-bold ${project.cost === 'Not calculated using Drilling Cost Estimator' ? 'text-xs' : 'text-base'} text-mining-primary`}>
+            {project.cost}
           </span>
         </div>
         {project.costRange && (
@@ -105,8 +111,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
           <span className="text-sm text-gray-500">Created: {formatDate(project.createdDate)}</span>
           <div className="flex items-center text-sm">
             <span className="text-gray-700">Drilling operations: </span>
-            <span className={`ml-1 ${getStatusColor(project.status)}`}>
-              {project.status === 'N/A' ? 'N/A' : project.status}
+            <span className={`ml-1 ${getStatusColor(getDisplayStatus())}`}>
+              {getDisplayStatus()}
             </span>
           </div>
         </div>

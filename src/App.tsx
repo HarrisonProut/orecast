@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
 import Home from "./pages/Home";
 import DrillingCostEstimator from "./pages/DrillingCostEstimator";
 import ExplorationComparison from "./pages/ExplorationComparison";
@@ -20,13 +22,20 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <div className="min-h-screen bg-gray-50">
-          <Navbar />
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/drilling-cost-estimator" element={<DrillingCostEstimator />} />
-            <Route path="/exploration-comparison" element={<ExplorationComparison />} />
-            <Route path="/project/:id" element={<ProjectDetails />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <Navbar />
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/drilling-cost-estimator" element={<DrillingCostEstimator />} />
+                  <Route path="/exploration-comparison" element={<ExplorationComparison />} />
+                  <Route path="/project/:id" element={<ProjectDetails />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </ProtectedRoute>
+            } />
           </Routes>
         </div>
       </BrowserRouter>
