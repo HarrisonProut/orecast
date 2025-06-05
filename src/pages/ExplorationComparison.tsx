@@ -96,20 +96,6 @@ const ExplorationComparison: React.FC = () => {
                   <span className="font-semibold text-gray-800">{site.costRange}</span>
                 </div>
 
-                {site.budgetAnalysis && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Max meters:</span>
-                      <span className="font-semibold text-blue-600">{site.budgetAnalysis.maxMeters.toLocaleString()}m</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Max holes:</span>
-                      <span className="font-semibold text-blue-600">{site.budgetAnalysis.maxHoles} holes</span>
-                    </div>
-                  </>
-                )}
-
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Confidence:</span>
                   <div className="flex items-center gap-2">
@@ -165,3 +151,4 @@ const ExplorationComparison: React.FC = () => {
 };
 
 export default ExplorationComparison;
+
