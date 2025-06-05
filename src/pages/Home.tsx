@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus, LogOut } from 'lucide-react';
@@ -147,14 +146,12 @@ const Home: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Exploration Projects</h1>
         <div className="flex items-center gap-4">
-          <div className="border border-gray-300 rounded-lg p-1">
-            <Button 
-              className="bg-mining-primary hover:bg-mining-secondary"
-              onClick={() => navigate('/drilling-cost-estimator')}
-            >
-              Drilling Cost Estimator
-            </Button>
-          </div>
+          <Button 
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800"
+            onClick={() => navigate('/drilling-cost-estimator')}
+          >
+            Drilling Cost Estimator
+          </Button>
           <Button 
             variant="outline" 
             size="sm"

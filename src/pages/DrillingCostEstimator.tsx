@@ -98,6 +98,25 @@ const terrainTypes = [
 
 const minerals: MineralType[] = ['Copper', 'Gold', 'Silver', 'Cobalt', 'Manganese', 'Iron'];
 
+// Static map images based on country
+const getMapImageForCountry = (country: string) => {
+  const countryImages: { [key: string]: string } = {
+    'United States': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=400&fit=crop',
+    'Canada': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop',
+    'Australia': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop',
+    'Chile': 'https://images.unsplash.com/photo-1482881497185-d4a9ddbe4151?w=800&h=400&fit=crop',
+    'South Africa': 'https://images.unsplash.com/photo-1484318571209-661cf29a69ea?w=800&h=400&fit=crop',
+    'Russia': 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop',
+    'Brazil': 'https://images.unsplash.com/photo-1516796181074-bf453fbfa3e6?w=800&h=400&fit=crop',
+    'China': 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop',
+    'United Kingdom': 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&h=400&fit=crop',
+    'Germany': 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&h=400&fit=crop',
+    'Japan': 'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800&h=400&fit=crop'
+  };
+  
+  return countryImages[country] || 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop';
+};
+
 const DrillingCostEstimator: React.FC = () => {
   const [latitude, setLatitude] = useState<string>('');
   const [longitude, setLongitude] = useState<string>('');
@@ -208,14 +227,14 @@ const DrillingCostEstimator: React.FC = () => {
   };
 
   const isFormValid = () => {
-    return latitude.trim() !== '' && longitude.trim() !== '' && depth.trim() !== '' && localMineralSelection.length > 0;
+    return latitude.trim() !== '' && longitude.trim() !== '' && depth.trim() !== '' && budget.trim() !== '' && localMineralSelection.length > 0;
   };
 
   const handleCalculate = () => {
     if (!isFormValid()) {
       toast({
         title: "Missing information",
-        description: "Please enter latitude, longitude, drilling depth, and select at least one mineral target.",
+        description: "Please enter latitude, longitude, drilling depth, budget, and select at least one mineral target.",
         variant: "destructive"
       });
       return;
@@ -268,13 +287,11 @@ const DrillingCostEstimator: React.FC = () => {
     const newTimeEstimation = calculateTimeEstimation(depthValue);
     setTimeEstimation(newTimeEstimation);
 
-    // Calculate budget analysis if budget is provided
+    // Calculate budget analysis
     let newBudgetAnalysis = null;
-    if (budget) {
-      const avgCostPerMeter = newCostPerMeterData.find(d => d.name === 'Average')?.cost || 0;
-      newBudgetAnalysis = calculateBudgetAnalysis(budget, avgCostPerMeter);
-      setBudgetAnalysis(newBudgetAnalysis);
-    }
+    const avgCostPerMeter = newCostPerMeterData.find(d => d.name === 'Average')?.cost || 0;
+    newBudgetAnalysis = calculateBudgetAnalysis(budget, avgCostPerMeter);
+    setBudgetAnalysis(newBudgetAnalysis);
 
     // Lock in the mineral selection for this calculation
     setSelectedMinerals([...localMineralSelection]);
@@ -404,9 +421,18 @@ const DrillingCostEstimator: React.FC = () => {
     projectsArray = [...projectsArray, newProject];
     localStorage.setItem('explorationProjects', JSON.stringify(projectsArray));
     
+    // Remove from search history
+    const updatedHistory = searchHistory.filter(item => item.id !== activeSiteId);
+    setSearchHistory(updatedHistory);
+    localStorage.setItem('drillingSearchHistory', JSON.stringify(updatedHistory));
+    
+    // Clear the estimation view
+    setShowEstimation(false);
+    setActiveSiteId(null);
+    
     toast({
       title: "Project Saved",
-      description: `${activeSite.name} has been added to your exploration projects.`,
+      description: `${activeSite.name} has been added to your exploration projects and removed from search history.`,
     });
     
     // Navigate to home
@@ -473,7 +499,7 @@ const DrillingCostEstimator: React.FC = () => {
             </div>
 
             <div>
-              <Label htmlFor="budget">Budget ($) - Optional</Label>
+              <Label htmlFor="budget">Budget ($) - Required</Label>
               <Input 
                 id="budget" 
                 type="text" 
@@ -481,6 +507,7 @@ const DrillingCostEstimator: React.FC = () => {
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 onKeyDown={handleKeyPress}
+                required
               />
             </div>
 
@@ -611,8 +638,14 @@ const DrillingCostEstimator: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4">Location Map</h2>
           {showEstimation ? (
             <>
-              <div className="bg-[url('https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/0,0,3,0/800x400?access_token=pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xneng1Mmp4MHRkYzNpcXl5ZDZ6Y2lyNSJ9.3jkU624v1hwRIm46HJbHMw')] rounded-md h-80 flex items-center justify-center bg-cover">
-                <MapPin className="h-10 w-10 text-mining-primary drop-shadow-lg" />
+              <div 
+                className="rounded-md h-80 flex items-center justify-center bg-cover bg-center relative"
+                style={{ 
+                  backgroundImage: `url(${getMapImageForCountry(locationDetails?.country || '')})` 
+                }}
+              >
+                <div className="absolute inset-0 bg-black/20 rounded-md"></div>
+                <MapPin className="h-10 w-10 text-mining-primary drop-shadow-lg relative z-10" />
               </div>
               
               <div className="mt-4 bg-gray-50 border rounded-md p-4">
@@ -676,6 +709,9 @@ const DrillingCostEstimator: React.FC = () => {
                     <div>
                       <p className="text-blue-600">Maximum holes:</p>
                       <p className="font-bold text-blue-800">{budgetAnalysis.maxHoles} holes</p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Based on rotary drilling having an average depth of {Math.round((parseFloat(depth) || 250) / (budgetAnalysis.maxHoles || 1))} metres per hole
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -805,7 +841,7 @@ const DrillingCostEstimator: React.FC = () => {
             </>
           ) : (
             <div className="h-56 flex items-center justify-center">
-              <p className="text-gray-500">Enter coordinates and click calculate to see drilling information</p>
+              <p className="text-gray-500">Enter coordinates and budget, then click calculate to see drilling information</p>
             </div>
           )}
         </div>

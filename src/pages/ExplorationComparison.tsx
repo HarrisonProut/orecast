@@ -1,323 +1,165 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { MineralType } from './DrillingCostEstimator';
+import { ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import MineralTag from '@/components/ui/MineralTag';
-import { useToast } from '@/hooks/use-toast';
+import { MineralType } from './DrillingCostEstimator';
 
-type ComparisonSiteItem = {
+type SearchHistoryItem = {
   id: string;
   name: string;
   latitude: string;
   longitude: string;
   depth: string;
+  budget?: string;
+  timestamp: Date;
   locationDetails: {
     name: string;
     country: string;
     rockType: string;
     confidenceRating: number;
   };
+  costData: { name: string; cost: number; }[];
+  costPerMeterData: { name: string; cost: number; }[];
   costRange: string;
+  costPerMeterRange: string;
   selectedMinerals: MineralType[];
+  costBreakdown: {
+    labor: number;
+    hardware: number;
+  };
   drillingMethod: string;
   terrain: {
     type: string;
     elevation: string;
   };
   timeEstimation: string;
-  selected: boolean;
+  budgetAnalysis?: {
+    maxMeters: number;
+    maxHoles: number;
+  };
 };
 
-const MAX_SIDE_BY_SIDE_COMPARISON = 4;
-
 const ExplorationComparison: React.FC = () => {
-  const [siteHistory, setSiteHistory] = useState<ComparisonSiteItem[]>([]);
-  const [selectedSites, setSelectedSites] = useState<string[]>([]);
+  const [sites, setSites] = useState<SearchHistoryItem[]>([]);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  // Load site history from localStorage for this demo
-  // In a real app, you would likely have a more persistent storage
   useEffect(() => {
-    const loadSites = () => {
-      const savedHistory = localStorage.getItem('drillingSearchHistory');
-      if (savedHistory) {
-        try {
-          const parsedHistory = JSON.parse(savedHistory);
-          const formattedHistory = parsedHistory.map((site: any) => ({
-            ...site,
-            selected: false,
-          }));
-          setSiteHistory(formattedHistory);
-        } catch (error) {
-          console.error("Error parsing drilling history:", error);
-        }
-      }
-    };
-    
-    loadSites();
-    
-    // Set up listener to refresh data when localStorage changes
-    const handleStorageChange = () => {
-      loadSites();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // This is a workaround to detect localStorage changes in the same tab
-    // We'll check for updates every 2 seconds
-    const interval = setInterval(loadSites, 2000);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
+    const savedHistory = localStorage.getItem('drillingSearchHistory');
+    if (savedHistory) {
+      const parsedHistory = JSON.parse(savedHistory);
+      setSites(parsedHistory);
+    }
   }, []);
 
-  const toggleSiteSelection = (siteId: string) => {
-    if (selectedSites.includes(siteId)) {
-      setSelectedSites(selectedSites.filter(id => id !== siteId));
-    } else {
-      if (selectedSites.length < MAX_SIDE_BY_SIDE_COMPARISON) {
-        setSelectedSites([...selectedSites, siteId]);
-      } else {
-        toast({
-          title: "Maximum sites selected",
-          description: `You can only compare up to ${MAX_SIDE_BY_SIDE_COMPARISON} sites side by side.`,
-          variant: "destructive"
-        });
-      }
-    }
-  };
-
-  const handleDeleteSite = (siteId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    // Remove from selected sites if it's selected
-    if (selectedSites.includes(siteId)) {
-      setSelectedSites(selectedSites.filter(id => id !== siteId));
-    }
-    
-    // Remove from history
-    const updatedHistory = siteHistory.filter(site => site.id !== siteId);
-    setSiteHistory(updatedHistory);
-    
-    // Update localStorage
-    localStorage.setItem('drillingSearchHistory', JSON.stringify(updatedHistory));
-    
-    toast({
-      title: "Site removed",
-      description: "The site has been removed from your search history",
-    });
+  const formatDate = (timestamp: Date): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-GB');
   };
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-6 flex items-center">
+      <div className="flex items-center gap-4 mb-6">
         <Button 
-          variant="ghost" 
-          className="mr-4"
+          variant="outline"
           onClick={() => navigate('/drilling-cost-estimator')}
+          className="flex items-center gap-2"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
+          <ArrowLeft className="h-4 w-4" />
+          Back to Estimator
         </Button>
-        <h1 className="text-3xl font-bold">Exploration Site Comparison</h1>
+        <h1 className="text-3xl font-bold">Compare Exploration Sites</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left panel - Site list */}
-        <div className="border rounded-lg p-6 bg-white shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Available Sites</h2>
-          
-          <div className="space-y-2 h-[calc(100vh-220px)] overflow-y-auto">
-            {siteHistory.length > 0 ? (
-              siteHistory.map((site) => (
-                <div 
-                  key={site.id}
-                  className={`border p-4 rounded-md cursor-pointer transition-colors relative ${
-                    selectedSites.includes(site.id) 
-                      ? 'border-mining-primary bg-mining-primary/10' 
-                      : 'hover:bg-gray-50'
-                  }`}
-                  onClick={() => toggleSiteSelection(site.id)}
-                >
-                  <div className="absolute top-2 right-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-gray-400 hover:text-red-500" 
-                      onClick={(e) => handleDeleteSite(site.id, e)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <h3 className="font-medium">{site.name}</h3>
-                  <p className="text-sm text-gray-600">{site.locationDetails.name}, {site.locationDetails.country}</p>
-                  <div className="mt-2 text-xs text-gray-500 flex justify-between">
-                    <span>Depth: {site.depth}m</span>
-                    <span>Cost: {site.costRange}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-gray-500">No exploration sites available</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Create sites using the Drilling Cost Estimator
+      {sites.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sites.map((site) => (
+            <div key={site.id} className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold mb-2">{site.name}</h3>
+                <p className="text-gray-600">{site.locationDetails.name}, {site.locationDetails.country}</p>
+                <p className="text-sm text-gray-500">
+                  {site.latitude}, {site.longitude} • {site.depth}m depth
                 </p>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Right panel - Comparison view */}
-        <div className="border rounded-lg p-6 bg-white shadow-sm lg:col-span-2">
-          <h2 className="text-xl font-semibold mb-4">Comparison View</h2>
-          
-          {selectedSites.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-3 text-left">Metrics</th>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <th key={site.id} className="p-3 text-left">{site.name}</th>
-                      ) : null;
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Location</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">
-                          {site.locationDetails.name}, {site.locationDetails.country}
-                        </td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Coordinates</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">
-                          {site.latitude}, {site.longitude}
-                        </td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Target Minerals</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">
-                          <div className="flex flex-wrap gap-1">
-                            {site.selectedMinerals.length > 0 ? 
-                              site.selectedMinerals.map(mineral => (
-                                <MineralTag key={mineral} type={mineral} />
-                              ))
-                            : 'None specified'}
-                          </div>
-                        </td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Depth</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">{site.depth}m</td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Cost Range</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3 font-medium text-mining-primary">{site.costRange}</td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Rock Type</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">{site.locationDetails.rockType}</td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Confidence Rating</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div 
-                              className="bg-mining-primary h-2.5 rounded-full" 
-                              style={{ width: `${(site.locationDetails?.confidenceRating || 7) * 10}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {site.locationDetails?.confidenceRating || 7}/10
-                          </span>
-                        </td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Terrain</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">
-                          {site.terrain?.type}, {site.terrain?.elevation}
-                        </td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-3 font-medium">Drilling Method</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">{site.drillingMethod}</td>
-                      ) : null;
-                    })}
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium">Time Estimation</td>
-                    {selectedSites.map(siteId => {
-                      const site = siteHistory.find(s => s.id === siteId);
-                      return site ? (
-                        <td key={site.id} className="p-3">{site.timeEstimation}</td>
-                      ) : null;
-                    })}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="h-60 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-gray-500">Select sites from the left panel to compare</p>
-                <p className="text-sm text-gray-400 mt-2">You can select up to {MAX_SIDE_BY_SIDE_COMPARISON} sites to view side by side</p>
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Cost per meter:</span>
+                  <span className="font-semibold text-mining-primary">{site.costPerMeterRange}/m</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Total cost:</span>
+                  <span className="font-semibold text-gray-800">{site.costRange}</span>
+                </div>
+
+                {site.budgetAnalysis && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Max meters:</span>
+                      <span className="font-semibold text-blue-600">{site.budgetAnalysis.maxMeters.toLocaleString()}m</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Max holes:</span>
+                      <span className="font-semibold text-blue-600">{site.budgetAnalysis.maxHoles} holes</span>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Confidence:</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-mining-primary h-2 rounded-full" 
+                        style={{ width: `${(site.locationDetails.confidenceRating / 10) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium">{site.locationDetails.confidenceRating}/10</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Rock type:</span>
+                  <span className="text-sm font-medium">{site.locationDetails.rockType}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Method:</span>
+                  <span className="text-sm font-medium">{site.drillingMethod}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Time estimate:</span>
+                  <span className="text-sm font-medium">{site.timeEstimation}</span>
+                </div>
+
+                <div>
+                  <span className="text-gray-600 text-sm mb-2 block">Minerals:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {site.selectedMinerals.map((mineral) => (
+                      <MineralTag key={mineral} type={mineral} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100">
+                  <span className="text-sm text-gray-500">Created: {formatDate(site.timestamp)}</span>
+                </div>
               </div>
             </div>
-          )}
+          ))}
         </div>
-      </div>
+      ) : (
+        <div className="text-center py-16">
+          <p className="text-gray-500 text-lg">No exploration sites to compare yet.</p>
+          <p className="text-gray-400 mt-2">Create some drilling cost estimates first!</p>
+        </div>
+      )}
     </div>
   );
 };
