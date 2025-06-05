@@ -103,6 +103,16 @@ const ProjectDetails: React.FC = () => {
         const foundProject = projects.find(p => p.id === id);
         if (foundProject) {
           setProject(foundProject);
+          
+          // Load saved metrics if they exist
+          const savedMetrics = localStorage.getItem(`projectMetrics_${id}`);
+          if (savedMetrics) {
+            const parsedMetrics = JSON.parse(savedMetrics);
+            setMetrics(prev => ({
+              ...prev,
+              ...parsedMetrics
+            }));
+          }
         }
       }
     };
@@ -160,7 +170,7 @@ const ProjectDetails: React.FC = () => {
     }));
   }, [metrics.npv, sliders]);
 
-  // Update financial metrics when sliders change
+  // Update financial metrics when sliders change AND save to localStorage
   useEffect(() => {
     const calculateMetrics = () => {
       const depositSize = typeof sliders.find(s => s.id === 'deposit-size')?.value === 'number' 
@@ -203,16 +213,25 @@ const ProjectDetails: React.FC = () => {
       const paybackMultiplier = baseNpv / newNpv;
       const newPayback = Math.round(basePayback * paybackMultiplier * 10) / 10;
 
-      setMetrics(prev => ({
-        ...prev,
+      const newMetrics = {
         npv: newNpv,
         irr: newIrr,
         paybackPeriod: newPayback
+      };
+
+      setMetrics(prev => ({
+        ...prev,
+        ...newMetrics
       }));
+
+      // Save metrics to localStorage so they're reflected on home page
+      if (id) {
+        localStorage.setItem(`projectMetrics_${id}`, JSON.stringify(newMetrics));
+      }
     };
 
     calculateMetrics();
-  }, [sliders]);
+  }, [sliders, id]);
 
   // Handle slider change
   const handleSliderChange = (sliderId: string, newValue: number[]) => {

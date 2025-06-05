@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +31,9 @@ type SearchHistoryItem = {
   timestamp: Date;
   locationDetails: LocationDetails;
   costData: { name: string; cost: number; }[];
+  costPerMeterData: { name: string; cost: number; }[];
   costRange: string;
+  costPerMeterRange: string;
   selectedMinerals: MineralType[];
   costBreakdown: {
     labor: number;
@@ -103,7 +104,9 @@ const DrillingCostEstimator: React.FC = () => {
   const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null);
   const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
   const [costData, setCostData] = useState<{ name: string; cost: number; }[]>([]);
+  const [costPerMeterData, setCostPerMeterData] = useState<{ name: string; cost: number; }[]>([]);
   const [costRange, setCostRange] = useState<string>('');
+  const [costPerMeterRange, setCostPerMeterRange] = useState<string>('');
   const [selectedMinerals, setSelectedMinerals] = useState<MineralType[]>([]);
   const [costBreakdown, setCostBreakdown] = useState<{labor: number; hardware: number}>({labor: 0, hardware: 0});
   const [drillingMethod, setDrillingMethod] = useState<string>('');
@@ -161,6 +164,15 @@ const DrillingCostEstimator: React.FC = () => {
     ];
   };
 
+  const calculateCostPerMeter = (totalCosts: { name: string; cost: number; }[]) => {
+    const depthValue = parseFloat(depth) || 250;
+    
+    return totalCosts.map(item => ({
+      name: item.name,
+      cost: Math.round(item.cost / depthValue)
+    }));
+  };
+
   const calculateCostBreakdown = (totalCost: number) => {
     // Random but realistic labor/hardware split
     const laborPercentage = 0.4 + Math.random() * 0.2; // 40-60% for labor
@@ -206,10 +218,19 @@ const DrillingCostEstimator: React.FC = () => {
     const newCostData = calculateCosts(720);
     setCostData(newCostData);
     
+    // Calculate cost per meter
+    const newCostPerMeterData = calculateCostPerMeter(newCostData);
+    setCostPerMeterData(newCostPerMeterData);
+    
     const minCost = Math.min(...newCostData.map(d => d.cost));
     const maxCost = Math.max(...newCostData.map(d => d.cost));
     const newCostRange = `$${minCost.toLocaleString()} - $${maxCost.toLocaleString()}`;
     setCostRange(newCostRange);
+
+    const minCostPerMeter = Math.min(...newCostPerMeterData.map(d => d.cost));
+    const maxCostPerMeter = Math.max(...newCostPerMeterData.map(d => d.cost));
+    const newCostPerMeterRange = `$${minCostPerMeter.toLocaleString()} - $${maxCostPerMeter.toLocaleString()}`;
+    setCostPerMeterRange(newCostPerMeterRange);
 
     // Calculate cost breakdown
     const avgCost = newCostData.find(d => d.name === 'Average')?.cost || 0;
@@ -242,7 +263,9 @@ const DrillingCostEstimator: React.FC = () => {
       timestamp: new Date(),
       locationDetails: newLocationDetails,
       costData: newCostData,
+      costPerMeterData: newCostPerMeterData,
       costRange: newCostRange,
+      costPerMeterRange: newCostPerMeterRange,
       selectedMinerals: [...localMineralSelection],
       costBreakdown: newCostBreakdown,
       drillingMethod: newDrillingMethod,
@@ -291,7 +314,9 @@ const DrillingCostEstimator: React.FC = () => {
     setDepth(item.depth);
     setLocationDetails(item.locationDetails);
     setCostData(item.costData);
+    setCostPerMeterData(item.costPerMeterData || calculateCostPerMeter(item.costData));
     setCostRange(item.costRange);
+    setCostPerMeterRange(item.costPerMeterRange || `$${Math.min(...calculateCostPerMeter(item.costData).map(d => d.cost)).toLocaleString()} - $${Math.max(...calculateCostPerMeter(item.costData).map(d => d.cost)).toLocaleString()}`);
     setActiveSiteId(item.id);
     setSelectedMinerals(item.selectedMinerals);
     setLocalMineralSelection([]);
@@ -322,10 +347,13 @@ const DrillingCostEstimator: React.FC = () => {
       name: activeSite.name,
       location: locationDetails.name,
       country: locationDetails.country,
-      cost: activeSite.costRange, // Use cost range instead of NPV
+      cost: activeSite.costRange,
+      costPerMeter: activeSite.costPerMeterRange,
+      npvRange: `$45M - $85M`, // Default NPV range for drilling estimator projects
       minerals: activeSite.selectedMinerals,
-      createdDate: new Date().toISOString().split('T')[0],
-      status: 'in progress' as const // Add in progress status
+      createdDate: new Date().toISOString(),
+      status: 'in progress' as const,
+      fromDrillingEstimator: true
     };
     
     // Save to localStorage
@@ -569,11 +597,11 @@ const DrillingCostEstimator: React.FC = () => {
           {showEstimation ? (
             <>
               <div className="text-center mb-4">
-                <p className="text-lg text-gray-500">Estimated Cost Range</p>
-                <p className="text-2xl font-bold text-mining-primary">{costRange}</p>
+                <p className="text-lg text-gray-500">Estimated Cost Per Meter</p>
+                <p className="text-2xl font-bold text-mining-primary">{costPerMeterRange}/m</p>
               </div>
               
-              <CostChart data={costData} />
+              <CostChart data={costPerMeterData} />
               
               <Separator className="my-6" />
               
@@ -597,6 +625,18 @@ const DrillingCostEstimator: React.FC = () => {
                   </svg>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="p-4">
+                  {/* Total Cost Chart */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-700 mb-4">Total Drilling Cost</h3>
+                    <div className="text-center mb-4">
+                      <p className="text-lg text-gray-500">Total Cost Range</p>
+                      <p className="text-xl font-bold text-mining-primary">{costRange}</p>
+                    </div>
+                    <CostChart data={costData} />
+                  </div>
+                  
+                  <Separator className="my-4" />
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-gray-50 p-4 rounded-md">
                       <h3 className="text-sm font-medium text-gray-500 mb-3">Cost Breakdown</h3>

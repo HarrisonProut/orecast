@@ -12,6 +12,7 @@ export interface ProjectData {
   location: string;
   country: string;
   cost: string; // Drilling cost
+  costPerMeter?: string; // Cost per meter for drilling estimator projects
   costRange?: string; // Added costRange
   npvRange?: string; // Added npvRange
   minerals: MineralType[];
@@ -46,28 +47,39 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'in progress':
-        return 'text-yellow-800';
+        return 'text-green-600';
       case 'completed':
-        return 'text-green-800';
+        return 'text-blue-600';
       case 'planning':
-        return 'text-blue-800';
+        return 'text-yellow-600';
       default:
-        return 'text-gray-800';
+        return 'text-gray-600';
     }
   };
 
-  // Determine the status display based on whether it came from drilling estimator
-  const getDisplayStatus = () => {
-    if (project.fromDrillingEstimator) {
-      return 'in progress';
+  // Get updated NPV from localStorage if it exists
+  const getUpdatedNPV = () => {
+    const savedMetrics = localStorage.getItem(`projectMetrics_${project.id}`);
+    if (savedMetrics) {
+      const metrics = JSON.parse(savedMetrics);
+      const formatCurrency = (value: number): string => {
+        if (value >= 1000000) {
+          return `$${(value / 1000000).toFixed(1)}M`;
+        }
+        return `$${value.toLocaleString()}`;
+      };
+      return formatCurrency(metrics.npv);
     }
-    return project.status === 'N/A' ? 'N/A' : project.status;
+    return project.npvRange || 'Not calculated';
   };
 
   return (
     <div className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xl font-bold">{project.name}</h3>
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <h3 className="text-xl font-bold mb-2">{project.name}</h3>
+          <p className="text-gray-600">{project.location}, {project.country}</p>
+        </div>
         <Button 
           variant="ghost" 
           size="icon" 
@@ -77,51 +89,57 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
           <Trash2 className="h-5 w-5" />
         </Button>
       </div>
-      <p className="text-gray-600 mb-4">{project.location}, {project.country}</p>
       
-      <div className="flex flex-col gap-2 mb-4">
-        <div className="flex items-center">
-          <span className="text-gray-500 mr-2">Drilling Cost:</span>
-          <span className={`font-bold ${project.cost === 'Not calculated using Drilling Cost Estimator' ? 'text-xs' : 'text-base'} text-mining-primary`}>
-            {project.cost}
-          </span>
+      <div className="space-y-3 mb-4">
+        {/* Project NPV */}
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Project NPV:</span>
+          <span className="font-semibold text-gray-800">{getUpdatedNPV()}</span>
         </div>
-        {project.costRange && (
-          <div className="flex items-center">
-            <span className="text-gray-500 mr-2">Cost Range:</span>
-            <span className="text-base font-bold text-gray-700">{project.costRange}</span>
+        
+        {/* Drilling Cost */}
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Drilling cost:</span>
+          <div className="text-right">
+            <span className="font-semibold text-gray-800">{project.cost}</span>
+            {project.fromDrillingEstimator && project.costPerMeter && (
+              <div className="text-sm text-gray-600">{project.costPerMeter}/m</div>
+            )}
           </div>
-        )}
-        {project.npvRange && (
-          <div className="flex items-center">
-            <span className="text-gray-500 mr-2">NPV Range:</span>
-            <span className="text-base font-bold text-gray-700">{project.npvRange}</span>
-          </div>
-        )}
-      </div>
-      
-      <div className="flex flex-wrap gap-2 mb-4">
-        {project.minerals.map((mineral) => (
-          <MineralTag key={mineral} type={mineral} />
-        ))}
-      </div>
-      
-      <div className="flex justify-between items-center mt-6">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-gray-500">Created: {formatDate(project.createdDate)}</span>
-          <div className="flex items-center text-sm">
-            <span className="text-gray-700">Drilling operations: </span>
-            <span className={`ml-1 ${getStatusColor(getDisplayStatus())}`}>
-              {getDisplayStatus()}
+        </div>
+        
+        {/* Drilling Operations Status */}
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Drilling operations:</span>
+          {project.fromDrillingEstimator ? (
+            <span className={`font-semibold ${getStatusColor('in progress')}`}>
+              In progress
             </span>
+          ) : (
+            <span className="text-gray-400">-</span>
+          )}
+        </div>
+        
+        {/* Minerals */}
+        <div>
+          <span className="text-gray-600 text-sm mb-2 block">Mineral targets:</span>
+          <div className="flex flex-wrap gap-1">
+            {project.minerals.map((mineral) => (
+              <MineralTag key={mineral} type={mineral} />
+            ))}
           </div>
         </div>
-        <button 
-          className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded transition-colors"
-          onClick={handleOpen}
-        >
-          Open
-        </button>
+        
+        {/* Created Date */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <span className="text-sm text-gray-500">Created: {formatDate(project.createdDate)}</span>
+          <button 
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded transition-colors text-sm"
+            onClick={handleOpen}
+          >
+            Open
+          </button>
+        </div>
       </div>
     </div>
   );
