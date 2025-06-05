@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Layers } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -39,8 +40,14 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="bg-mining-primary p-3 rounded-full">
+              <Layers className="h-8 w-8 text-white" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-mining-primary mb-2">OreCast</div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-600 mt-2">Sign in to your exploration account</p>
+          <p className="text-gray-600 mt-2">Sign in to your ROI facilitator</p>
         </div>
         
         <form onSubmit={handleLogin} className="space-y-6">

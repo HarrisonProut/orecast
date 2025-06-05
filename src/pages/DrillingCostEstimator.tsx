@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Edit, Save, MapPin, BarChart2 } from 'lucide-react';
+import { Edit, Save, MapPin, BarChart2, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from 'react-router-dom';
 import CostChart from '@/components/CostChart';
@@ -28,6 +28,7 @@ type SearchHistoryItem = {
   latitude: string;
   longitude: string;
   depth: string;
+  budget?: string;
   timestamp: Date;
   locationDetails: LocationDetails;
   costData: { name: string; cost: number; }[];
@@ -45,6 +46,10 @@ type SearchHistoryItem = {
     elevation: string;
   };
   timeEstimation: string;
+  budgetAnalysis?: {
+    maxMeters: number;
+    maxHoles: number;
+  };
 };
 
 type LocationDetails = {
@@ -97,6 +102,7 @@ const DrillingCostEstimator: React.FC = () => {
   const [latitude, setLatitude] = useState<string>('');
   const [longitude, setLongitude] = useState<string>('');
   const [depth, setDepth] = useState<string>('');
+  const [budget, setBudget] = useState<string>('');
   const [showEstimation, setShowEstimation] = useState<boolean>(false);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -113,6 +119,7 @@ const DrillingCostEstimator: React.FC = () => {
   const [terrain, setTerrain] = useState<{type: string; elevation: string}>({type: '', elevation: ''});
   const [timeEstimation, setTimeEstimation] = useState<string>('');
   const [localMineralSelection, setLocalMineralSelection] = useState<MineralType[]>([]);
+  const [budgetAnalysis, setBudgetAnalysis] = useState<{maxMeters: number; maxHoles: number} | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -189,6 +196,17 @@ const DrillingCostEstimator: React.FC = () => {
     return `${baseWeeks}-${baseWeeks + variability} weeks`;
   };
 
+  const calculateBudgetAnalysis = (budgetValue: string, avgCostPerMeter: number) => {
+    const budgetNum = parseFloat(budgetValue);
+    if (!budgetNum || budgetNum <= 0) return null;
+    
+    const maxMeters = Math.floor(budgetNum / avgCostPerMeter);
+    const depthValue = parseFloat(depth) || 250;
+    const maxHoles = Math.floor(maxMeters / depthValue);
+    
+    return { maxMeters, maxHoles };
+  };
+
   const isFormValid = () => {
     return latitude.trim() !== '' && longitude.trim() !== '' && depth.trim() !== '' && localMineralSelection.length > 0;
   };
@@ -250,6 +268,14 @@ const DrillingCostEstimator: React.FC = () => {
     const newTimeEstimation = calculateTimeEstimation(depthValue);
     setTimeEstimation(newTimeEstimation);
 
+    // Calculate budget analysis if budget is provided
+    let newBudgetAnalysis = null;
+    if (budget) {
+      const avgCostPerMeter = newCostPerMeterData.find(d => d.name === 'Average')?.cost || 0;
+      newBudgetAnalysis = calculateBudgetAnalysis(budget, avgCostPerMeter);
+      setBudgetAnalysis(newBudgetAnalysis);
+    }
+
     // Lock in the mineral selection for this calculation
     setSelectedMinerals([...localMineralSelection]);
 
@@ -260,6 +286,7 @@ const DrillingCostEstimator: React.FC = () => {
       latitude,
       longitude,
       depth,
+      budget: budget || undefined,
       timestamp: new Date(),
       locationDetails: newLocationDetails,
       costData: newCostData,
@@ -270,7 +297,8 @@ const DrillingCostEstimator: React.FC = () => {
       costBreakdown: newCostBreakdown,
       drillingMethod: newDrillingMethod,
       terrain: newTerrain,
-      timeEstimation: newTimeEstimation
+      timeEstimation: newTimeEstimation,
+      budgetAnalysis: newBudgetAnalysis || undefined
     };
     
     const updatedHistory = [...searchHistory, newItem];
@@ -287,6 +315,18 @@ const DrillingCostEstimator: React.FC = () => {
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && isFormValid()) {
       handleCalculate();
+    }
+  };
+
+  const deleteHistoryItem = (itemId: string) => {
+    const updatedHistory = searchHistory.filter(item => item.id !== itemId);
+    setSearchHistory(updatedHistory);
+    localStorage.setItem('drillingSearchHistory', JSON.stringify(updatedHistory));
+    
+    // If the deleted item was active, clear the estimation
+    if (activeSiteId === itemId) {
+      setShowEstimation(false);
+      setActiveSiteId(null);
     }
   };
 
@@ -312,6 +352,7 @@ const DrillingCostEstimator: React.FC = () => {
     setLatitude(item.latitude);
     setLongitude(item.longitude);
     setDepth(item.depth);
+    setBudget(item.budget || '');
     setLocationDetails(item.locationDetails);
     setCostData(item.costData);
     setCostPerMeterData(item.costPerMeterData || calculateCostPerMeter(item.costData));
@@ -324,6 +365,7 @@ const DrillingCostEstimator: React.FC = () => {
     setDrillingMethod(item.drillingMethod);
     setTerrain(item.terrain);
     setTimeEstimation(item.timeEstimation);
+    setBudgetAnalysis(item.budgetAnalysis || null);
     setShowEstimation(true);
   };
 
@@ -431,6 +473,18 @@ const DrillingCostEstimator: React.FC = () => {
             </div>
 
             <div>
+              <Label htmlFor="budget">Budget ($) - Optional</Label>
+              <Input 
+                id="budget" 
+                type="text" 
+                placeholder="e.g., 500000" 
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                onKeyDown={handleKeyPress}
+              />
+            </div>
+
+            <div>
               <Label htmlFor="minerals">Mineral Target</Label>
               <Select
                 onValueChange={(value) => handleToggleMineralSelection(value as MineralType)}
@@ -505,13 +559,13 @@ const DrillingCostEstimator: React.FC = () => {
                         </div>
                       ) : (
                         <div className="flex justify-between items-center">
-                          <div className="cursor-pointer" onClick={() => loadSite(item)}>
+                          <div className="cursor-pointer flex-1" onClick={() => loadSite(item)}>
                             <p className="font-medium">{item.name}</p>
                             <p className="text-xs text-gray-500">
                               {item.latitude}, {item.longitude} ({item.depth}m)
                             </p>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-1">
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -530,6 +584,14 @@ const DrillingCostEstimator: React.FC = () => {
                               className="h-6 w-6 p-0"
                             >
                               <Save className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteHistoryItem(item.id)}
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
@@ -602,6 +664,22 @@ const DrillingCostEstimator: React.FC = () => {
               </div>
               
               <CostChart data={costPerMeterData} />
+
+              {budgetAnalysis && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-md border border-blue-200">
+                  <h3 className="font-semibold text-blue-800 mb-2">Budget Analysis</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-blue-600">Maximum meters:</p>
+                      <p className="font-bold text-blue-800">{budgetAnalysis.maxMeters.toLocaleString()}m</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600">Maximum holes:</p>
+                      <p className="font-bold text-blue-800">{budgetAnalysis.maxHoles} holes</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <Separator className="my-6" />
               

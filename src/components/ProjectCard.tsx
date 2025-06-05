@@ -44,19 +44,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
     navigate(`/project/${project.id}`);
   };
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'in progress':
-        return 'text-green-600';
-      case 'completed':
-        return 'text-blue-600';
-      case 'planning':
-        return 'text-yellow-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
-
   // Get updated NPV from localStorage if it exists
   const getUpdatedNPV = () => {
     const savedMetrics = localStorage.getItem(`projectMetrics_${project.id}`);
@@ -71,6 +58,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
       return formatCurrency(metrics.npv);
     }
     return project.npvRange || 'Not calculated';
+  };
+
+  const getDrillingCostDisplay = () => {
+    if (project.fromDrillingEstimator) {
+      return (
+        <div className="text-right">
+          <span className="font-semibold text-gray-800">{project.cost}</span>
+          {project.costPerMeter && (
+            <div className="text-sm text-gray-600">{project.costPerMeter}/m</div>
+          )}
+        </div>
+      );
+    }
+    return <span className="font-semibold text-gray-800">-</span>;
   };
 
   return (
@@ -100,19 +101,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete }) => {
         {/* Drilling Cost */}
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Drilling cost:</span>
-          <div className="text-right">
-            <span className="font-semibold text-gray-800">{project.cost}</span>
-            {project.fromDrillingEstimator && project.costPerMeter && (
-              <div className="text-sm text-gray-600">{project.costPerMeter}/m</div>
-            )}
-          </div>
+          {getDrillingCostDisplay()}
         </div>
         
         {/* Drilling Operations Status */}
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Drilling operations:</span>
           {project.fromDrillingEstimator ? (
-            <span className={`font-semibold ${getStatusColor('in progress')}`}>
+            <span className="font-semibold text-green-600">
               In progress
             </span>
           ) : (
