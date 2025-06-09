@@ -1,23 +1,9 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Layers, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
+import { Layers } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const handleSignOut = () => {
-    localStorage.removeItem('isLoggedIn');
-    navigate('/login');
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-  };
-
   return (
     <nav className="border-b border-gray-200 bg-white py-4 px-6">
       <div className="container mx-auto flex justify-between items-center">
@@ -28,7 +14,7 @@ const Navbar: React.FC = () => {
           <span className="text-2xl font-bold text-mining-primary">OreCast</span>
         </Link>
         
-        <div className="flex gap-6 items-center">
+        <div className="flex gap-6">
           <Link 
             to="/" 
             className="text-gray-700 hover:text-mining-primary font-medium transition-colors"
@@ -41,15 +27,6 @@ const Navbar: React.FC = () => {
           >
             Drilling Cost Estimator
           </Link>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleSignOut}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
         </div>
       </div>
     </nav>
@@ -57,4 +34,3 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
-

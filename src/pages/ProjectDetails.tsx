@@ -285,20 +285,6 @@ const ProjectDetails: React.FC = () => {
     }
   };
 
-  // Get map image based on country
-  const getMapImage = (country: string): string => {
-    const mapImages: Record<string, string> = {
-      'Australia': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1000&h=400&fit=crop',
-      'Canada': 'https://images.unsplash.com/photo-1517935706615-2717063c2225?w=1000&h=400&fit=crop',
-      'Chile': 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=1000&h=400&fit=crop',
-      'South Africa': 'https://images.unsplash.com/photo-1484318571209-661cf29a69ea?w=1000&h=400&fit=crop',
-      'United States': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1000&h=400&fit=crop',
-      'Germany': 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1000&h=400&fit=crop'
-    };
-    
-    return mapImages[country] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1000&h=400&fit=crop';
-  };
-
   if (!project) {
     return (
       <div className="container mx-auto py-10 px-4 text-center">
@@ -328,11 +314,8 @@ const ProjectDetails: React.FC = () => {
       {/* Location Map */}
       <div className="border rounded-lg p-6 bg-white shadow-sm mb-8">
         <h2 className="text-xl font-semibold mb-4">Location Map</h2>
-        <div 
-          className="rounded-md h-64 flex items-center justify-center bg-cover bg-center relative"
-          style={{ backgroundImage: `url(${getMapImage(project.country)})` }}
-        >
-          <MapPin className="h-10 w-10 text-mining-primary drop-shadow-lg bg-white rounded-full p-2" />
+        <div className="bg-[url('https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/0,0,3,0/1000x400?access_token=pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xneng1Mmp4MHRkYzNpcXl5ZDZ6Y2lyNSJ9.3jkU624v1hwRIm46HJbHMw')] rounded-md h-64 flex items-center justify-center bg-cover relative">
+          <MapPin className="h-10 w-10 text-mining-primary drop-shadow-lg" />
         </div>
         <div className="mt-4 bg-gray-50 border rounded-md p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus, LogOut } from 'lucide-react';
@@ -98,7 +97,7 @@ const Home: React.FC = () => {
       name: newProject.name,
       location: randomLocationData.location,
       country: randomLocationData.country,
-      cost: '-',
+      cost: 'Not calculated using Drilling Cost Estimator',
       npvRange,
       minerals: newProject.minerals,
       createdDate: new Date().toISOString(),
@@ -147,6 +146,12 @@ const Home: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Exploration Projects</h1>
         <div className="flex items-center gap-4">
+          <Button 
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800"
+            onClick={() => navigate('/drilling-cost-estimator')}
+          >
+            Drilling Cost Estimator
+          </Button>
           <Button 
             variant="outline" 
             size="sm"
@@ -271,4 +276,3 @@ const Home: React.FC = () => {
 };
 
 export default Home;
-
