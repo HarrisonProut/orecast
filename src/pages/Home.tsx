@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
-import { Plus, LogOut } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,6 @@ const Home: React.FC = () => {
   });
   const [selectedMineral, setSelectedMineral] = useState<MineralType | ''>('');
   
-  const navigate = useNavigate();
   const { toast } = useToast();
   
   // Load projects from localStorage on initial load
@@ -52,15 +51,6 @@ const Home: React.FC = () => {
 
   const handleAddProject = () => {
     setIsAddDialogOpen(true);
-  };
-
-  const handleSignOut = () => {
-    localStorage.removeItem('isLoggedIn');
-    navigate('/login');
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
   };
 
   const handleDeleteProject = (id: string) => {
@@ -145,26 +135,9 @@ const Home: React.FC = () => {
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Exploration Projects</h1>
-        <div className="flex items-center gap-4">
-          <Button 
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800"
-            onClick={() => navigate('/drilling-cost-estimator')}
-          >
-            Drilling Cost Estimator
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleSignOut}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
-          <Button className="bg-mining-primary hover:bg-mining-secondary" onClick={handleAddProject}>
-            <Plus className="mr-2 h-4 w-4" /> Add Project
-          </Button>
-        </div>
+        <Button className="bg-mining-primary hover:bg-mining-secondary" onClick={handleAddProject}>
+          <Plus className="mr-2 h-4 w-4" /> Add Project
+        </Button>
       </div>
 
       {projects.length > 0 ? (
