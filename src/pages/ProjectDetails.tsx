@@ -70,9 +70,9 @@ const ProjectDetails: React.FC = () => {
   const [project, setProject] = useState<ProjectData | null>(null);
   const [liveMineralPrices, setLiveMineralPrices] = useState(baseMineralPrices);
   const [flashingMinerals, setFlashingMinerals] = useState<Set<MineralType>>(new Set());
-  const [openGraphs, setOpenGraphs] = useState<Record<MineralType, boolean>>({});
-  const [graphPeriods, setGraphPeriods] = useState<Record<MineralType, '1M' | '6M' | '1Y' | '5Y'>>({});
-  const [historicalData, setHistoricalData] = useState<Record<MineralType, Array<{date: string, price: number, timestamp: number}>>>({});
+  const [openGraphs, setOpenGraphs] = useState<Record<MineralType, boolean>>({} as Record<MineralType, boolean>);
+  const [graphPeriods, setGraphPeriods] = useState<Record<MineralType, '1M' | '6M' | '1Y' | '5Y'>>({} as Record<MineralType, '1M' | '6M' | '1Y' | '5Y'>);
+  const [historicalData, setHistoricalData] = useState<Record<MineralType, Array<{date: string, price: number, timestamp: number}>>>({} as Record<MineralType, Array<{date: string, price: number, timestamp: number}>>);
   
   const [metrics, setMetrics] = useState<FinancialMetrics>({
     npv: 63000000, // Default $63M
