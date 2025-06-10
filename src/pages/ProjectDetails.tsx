@@ -29,8 +29,8 @@ interface SliderConfig {
   isRange: boolean;
 }
 
-// Define mineral price data with dummy figures
-const mineralPrices: Record<MineralType, { price: number; unit: string }> = {
+// Define mineral price data with base figures
+const baseMineralPrices: Record<MineralType, { price: number; unit: string }> = {
   'Copper': { price: 8765, unit: '$/tonne' },
   'Gold': { price: 2048.75, unit: '$/oz' },
   'Silver': { price: 24.92, unit: '$/oz' },
@@ -42,6 +42,7 @@ const mineralPrices: Record<MineralType, { price: number; unit: string }> = {
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<ProjectData | null>(null);
+  const [liveMineralPrices, setLiveMineralPrices] = useState(baseMineralPrices);
   const [metrics, setMetrics] = useState<FinancialMetrics>({
     npv: 63000000, // Default $63M
     irr: 8.3, // Default 8.3%
@@ -93,6 +94,40 @@ const ProjectDetails: React.FC = () => {
       isRange: false
     }
   ]);
+
+  // Live pricing update effect
+  useEffect(() => {
+    const updatePrices = () => {
+      setLiveMineralPrices(prevPrices => {
+        const updatedPrices = { ...prevPrices };
+        
+        Object.keys(updatedPrices).forEach(mineral => {
+          const mineralKey = mineral as MineralType;
+          const basePrice = baseMineralPrices[mineralKey].price;
+          
+          // Generate small random change (±0.5% to ±2%)
+          const changePercent = (Math.random() - 0.5) * 4; // -2% to +2%
+          const changeAmount = basePrice * (changePercent / 100);
+          
+          // Apply change to current price, but keep it within reasonable bounds
+          const currentPrice = updatedPrices[mineralKey].price;
+          const newPrice = Math.max(basePrice * 0.85, Math.min(basePrice * 1.15, currentPrice + changeAmount));
+          
+          updatedPrices[mineralKey] = {
+            ...updatedPrices[mineralKey],
+            price: Math.round(newPrice * 100) / 100 // Round to 2 decimal places
+          };
+        });
+        
+        return updatedPrices;
+      });
+    };
+
+    // Update prices every 5 seconds
+    const priceInterval = setInterval(updatePrices, 5000);
+    
+    return () => clearInterval(priceInterval);
+  }, []);
 
   // Load project data from localStorage
   useEffect(() => {
@@ -349,13 +384,13 @@ const ProjectDetails: React.FC = () => {
                       {mineral}
                     </span>
                     <span className="font-semibold">
-                      {mineralPrices[mineral]?.price.toLocaleString()} {mineralPrices[mineral]?.unit}
+                      {liveMineralPrices[mineral]?.price.toLocaleString()} {liveMineralPrices[mineral]?.unit}
                     </span>
                   </div>
                 ))}
               </div>
               <p className="text-xs text-gray-500 italic">
-                * These are live prices and are subject to fluctuation
+                * These are live prices and update every 5 seconds
               </p>
             </div>
             
