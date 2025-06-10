@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ProjectData } from '@/components/ProjectCard';
@@ -39,10 +39,41 @@ const baseMineralPrices: Record<MineralType, { price: number; unit: string }> = 
   'Iron': { price: 120, unit: '$/tonne' }
 };
 
+// Generate historical data for each mineral
+const generateHistoricalData = (mineral: MineralType, years: number) => {
+  const basePrice = baseMineralPrices[mineral].price;
+  const data = [];
+  const dataPoints = years * 365; // Daily data points
+  
+  for (let i = dataPoints; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    
+    // Generate realistic price variations
+    const volatility = mineral === 'Gold' ? 0.02 : mineral === 'Silver' ? 0.03 : 0.025;
+    const trend = Math.sin(i / 30) * 0.1; // Seasonal trend
+    const random = (Math.random() - 0.5) * volatility;
+    const priceMultiplier = 1 + trend + random;
+    
+    data.push({
+      date: date.toISOString().split('T')[0],
+      price: Math.round(basePrice * priceMultiplier * 100) / 100,
+      timestamp: date.getTime()
+    });
+  }
+  
+  return data;
+};
+
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<ProjectData | null>(null);
   const [liveMineralPrices, setLiveMineralPrices] = useState(baseMineralPrices);
+  const [flashingMinerals, setFlashingMinerals] = useState<Set<MineralType>>(new Set());
+  const [openGraphs, setOpenGraphs] = useState<Record<MineralType, boolean>>({});
+  const [graphPeriods, setGraphPeriods] = useState<Record<MineralType, '1M' | '6M' | '1Y' | '5Y'>>({});
+  const [historicalData, setHistoricalData] = useState<Record<MineralType, Array<{date: string, price: number, timestamp: number}>>>({});
+  
   const [metrics, setMetrics] = useState<FinancialMetrics>({
     npv: 63000000, // Default $63M
     irr: 8.3, // Default 8.3%
@@ -95,11 +126,28 @@ const ProjectDetails: React.FC = () => {
     }
   ]);
 
+  // Initialize historical data
+  useEffect(() => {
+    if (project) {
+      const data: Record<MineralType, Array<{date: string, price: number, timestamp: number}>> = {} as any;
+      const periods: Record<MineralType, '1M' | '6M' | '1Y' | '5Y'> = {} as any;
+      
+      project.minerals.forEach(mineral => {
+        data[mineral] = generateHistoricalData(mineral, 5);
+        periods[mineral] = '1Y';
+      });
+      
+      setHistoricalData(data);
+      setGraphPeriods(periods);
+    }
+  }, [project]);
+
   // Live pricing update effect
   useEffect(() => {
     const updatePrices = () => {
       setLiveMineralPrices(prevPrices => {
         const updatedPrices = { ...prevPrices };
+        const changedMinerals = new Set<MineralType>();
         
         Object.keys(updatedPrices).forEach(mineral => {
           const mineralKey = mineral as MineralType;
@@ -113,11 +161,34 @@ const ProjectDetails: React.FC = () => {
           const currentPrice = updatedPrices[mineralKey].price;
           const newPrice = Math.max(basePrice * 0.85, Math.min(basePrice * 1.15, currentPrice + changeAmount));
           
+          if (Math.abs(newPrice - currentPrice) > 0.01) {
+            changedMinerals.add(mineralKey);
+            
+            // Update historical data with new price
+            setHistoricalData(prev => ({
+              ...prev,
+              [mineralKey]: [
+                ...prev[mineralKey],
+                {
+                  date: new Date().toISOString().split('T')[0],
+                  price: Math.round(newPrice * 100) / 100,
+                  timestamp: Date.now()
+                }
+              ].slice(-1825) // Keep last 5 years of daily data
+            }));
+          }
+          
           updatedPrices[mineralKey] = {
             ...updatedPrices[mineralKey],
             price: Math.round(newPrice * 100) / 100 // Round to 2 decimal places
           };
         });
+        
+        // Trigger flash animation for changed minerals
+        if (changedMinerals.size > 0) {
+          setFlashingMinerals(changedMinerals);
+          setTimeout(() => setFlashingMinerals(new Set()), 300);
+        }
         
         return updatedPrices;
       });
@@ -320,6 +391,47 @@ const ProjectDetails: React.FC = () => {
     }
   };
 
+  // Toggle graph visibility
+  const toggleGraph = (mineral: MineralType) => {
+    setOpenGraphs(prev => ({
+      ...prev,
+      [mineral]: !prev[mineral]
+    }));
+  };
+
+  // Change graph period
+  const changeGraphPeriod = (mineral: MineralType, period: '1M' | '6M' | '1Y' | '5Y') => {
+    setGraphPeriods(prev => ({
+      ...prev,
+      [mineral]: period
+    }));
+  };
+
+  // Get filtered historical data based on period
+  const getFilteredData = (mineral: MineralType) => {
+    const data = historicalData[mineral] || [];
+    const period = graphPeriods[mineral] || '1Y';
+    const now = Date.now();
+    
+    let cutoff: number;
+    switch (period) {
+      case '1M':
+        cutoff = now - (30 * 24 * 60 * 60 * 1000);
+        break;
+      case '6M':
+        cutoff = now - (180 * 24 * 60 * 60 * 1000);
+        break;
+      case '1Y':
+        cutoff = now - (365 * 24 * 60 * 60 * 1000);
+        break;
+      case '5Y':
+        cutoff = now - (5 * 365 * 24 * 60 * 60 * 1000);
+        break;
+    }
+    
+    return data.filter(item => item.timestamp >= cutoff);
+  };
+
   if (!project) {
     return (
       <div className="container mx-auto py-10 px-4 text-center">
@@ -379,13 +491,100 @@ const ProjectDetails: React.FC = () => {
               <h3 className="text-lg font-medium">Mineral Prices (Live)</h3>
               <div className="grid grid-cols-1 gap-4">
                 {project.minerals.map(mineral => (
-                  <div key={mineral} className={`flex justify-between items-center p-3 rounded-md border ${getMineralColor(mineral)}`}>
-                    <span className={`font-medium ${getMineralColor(mineral).split(' ')[0]}`}>
-                      {mineral}
-                    </span>
-                    <span className="font-semibold">
-                      {liveMineralPrices[mineral]?.price.toLocaleString()} {liveMineralPrices[mineral]?.unit}
-                    </span>
+                  <div key={mineral} className="space-y-2">
+                    <div className={`flex justify-between items-center p-3 rounded-md border transition-all duration-300 ${getMineralColor(mineral)} ${
+                      flashingMinerals.has(mineral) ? 'ring-2 ring-blue-400 shadow-lg transform scale-105' : ''
+                    }`}>
+                      <span className={`font-medium ${getMineralColor(mineral).split(' ')[0]}`}>
+                        {mineral}
+                      </span>
+                      <span className={`font-semibold transition-all duration-300 ${
+                        flashingMinerals.has(mineral) ? 'text-blue-600' : ''
+                      }`}>
+                        {liveMineralPrices[mineral]?.price.toLocaleString()} {liveMineralPrices[mineral]?.unit}
+                      </span>
+                    </div>
+                    
+                    {/* Graph Toggle Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleGraph(mineral)}
+                      className="w-full flex items-center justify-center gap-2"
+                    >
+                      {openGraphs[mineral] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {openGraphs[mineral] ? 'Hide' : 'Show'} Price History
+                    </Button>
+                    
+                    {/* Historical Price Graph */}
+                    {openGraphs[mineral] && (
+                      <div className="border rounded-lg p-4 bg-white">
+                        {/* Time Period Buttons */}
+                        <div className="flex gap-1 mb-4">
+                          {(['1M', '6M', '1Y', '5Y'] as const).map(period => (
+                            <button
+                              key={period}
+                              onClick={() => changeGraphPeriod(mineral, period)}
+                              className={`px-3 py-1 text-xs rounded border transition-colors ${
+                                graphPeriods[mineral] === period
+                                  ? 'bg-gray-900 text-white border-gray-900'
+                                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {period}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {/* Price Chart */}
+                        <div className="h-48">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={getFilteredData(mineral)}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis 
+                                dataKey="date" 
+                                tick={{ fontSize: 10 }}
+                                tickFormatter={(value) => {
+                                  const date = new Date(value);
+                                  return date.toLocaleDateString('en-GB', { 
+                                    day: '2-digit', 
+                                    month: '2-digit' 
+                                  });
+                                }}
+                              />
+                              <YAxis 
+                                tick={{ fontSize: 10 }}
+                                tickFormatter={(value) => `${value.toLocaleString()}`}
+                              />
+                              <Tooltip 
+                                formatter={(value: any) => [`${value} ${liveMineralPrices[mineral]?.unit}`, 'Price']}
+                                labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
+                                contentStyle={{
+                                  backgroundColor: '#fff',
+                                  border: '1px solid #ccc',
+                                  borderRadius: '4px',
+                                  fontSize: '12px'
+                                }}
+                              />
+                              <Area 
+                                type="monotone" 
+                                dataKey="price" 
+                                stroke="#d4af37" 
+                                fill="#d4af37" 
+                                fillOpacity={0.1}
+                                strokeWidth={1.5}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                        
+                        {/* Current Price Display */}
+                        <div className="mt-2 flex justify-between items-center text-xs text-gray-600">
+                          <span>Current: {liveMineralPrices[mineral]?.price.toLocaleString()} {liveMineralPrices[mineral]?.unit}</span>
+                          <span>Last updated: {new Date().toLocaleTimeString()}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
