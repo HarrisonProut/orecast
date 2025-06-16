@@ -72,26 +72,31 @@ const Home: React.FC = () => {
   
   // Load projects from localStorage on initial load, or generate random ones if none exist
   useEffect(() => {
+    // Always start with default projects, then check if user has added any
+    const defaultProjects = generateRandomProjects();
     const savedProjects = localStorage.getItem('explorationProjects');
-    let loadedProjects: ProjectData[] = [];
+    let loadedProjects: ProjectData[] = defaultProjects;
     
     if (savedProjects) {
       try {
-        loadedProjects = JSON.parse(savedProjects);
+        const userProjects = JSON.parse(savedProjects);
+        // Only use saved projects if they exist and contain user-created ones
+        if (userProjects && userProjects.length > 0) {
+          // Check if there are any user-created projects (not the default ones)
+          const hasUserProjects = userProjects.some((p: ProjectData) => !p.id.startsWith('exploration-project-'));
+          if (hasUserProjects) {
+            loadedProjects = userProjects;
+          }
+        }
       } catch (error) {
         console.error('Error parsing saved projects:', error);
-        loadedProjects = [];
+        loadedProjects = defaultProjects;
       }
     }
     
-    // If no projects exist or array is empty, generate random projects
-    if (!loadedProjects || loadedProjects.length === 0) {
-      console.log('No existing projects found, generating random projects');
-      loadedProjects = generateRandomProjects();
-      localStorage.setItem('explorationProjects', JSON.stringify(loadedProjects));
-    }
-    
     setProjects(loadedProjects);
+    // Always save the current state to localStorage
+    localStorage.setItem('explorationProjects', JSON.stringify(loadedProjects));
   }, []);
 
   const handleAddProject = () => {

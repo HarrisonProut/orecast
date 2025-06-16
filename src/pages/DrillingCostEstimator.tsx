@@ -211,31 +211,36 @@ const DrillingCostEstimator: React.FC = () => {
 
   // Load search history from localStorage or generate random ones
   useEffect(() => {
+    // Always start with default prospects, then check if user has added any
+    const defaultProspects = generateRandomDrillingProspects();
     const savedHistory = localStorage.getItem('drillingSearchHistory');
-    let loadedHistory: SearchHistoryItem[] = [];
+    let loadedHistory: SearchHistoryItem[] = defaultProspects;
     
     if (savedHistory) {
       try {
-        loadedHistory = JSON.parse(savedHistory);
+        const userHistory = JSON.parse(savedHistory);
         // Parse timestamp strings back to Date objects
-        loadedHistory = loadedHistory.map(item => ({
+        const parsedHistory = userHistory.map((item: SearchHistoryItem) => ({
           ...item,
           timestamp: new Date(item.timestamp)
         }));
+        
+        // Only use saved history if it contains user-created entries
+        if (parsedHistory && parsedHistory.length > 0) {
+          const hasUserEntries = parsedHistory.some((item: SearchHistoryItem) => !item.id.startsWith('drilling-prospect-'));
+          if (hasUserEntries) {
+            loadedHistory = parsedHistory;
+          }
+        }
       } catch (error) {
         console.error('Error parsing saved drilling history:', error);
-        loadedHistory = [];
+        loadedHistory = defaultProspects;
       }
     }
     
-    // If no history exists or array is empty, generate random prospects
-    if (!loadedHistory || loadedHistory.length === 0) {
-      console.log('No existing drilling history found, generating random prospects');
-      loadedHistory = generateRandomDrillingProspects();
-      localStorage.setItem('drillingSearchHistory', JSON.stringify(loadedHistory));
-    }
-    
     setSearchHistory(loadedHistory);
+    // Always save the current state to localStorage
+    localStorage.setItem('drillingSearchHistory', JSON.stringify(loadedHistory));
   }, []);
 
   const generateRandomCoordinates = () => {
