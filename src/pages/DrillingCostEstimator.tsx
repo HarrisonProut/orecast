@@ -212,14 +212,30 @@ const DrillingCostEstimator: React.FC = () => {
   // Load search history from localStorage or generate random ones
   useEffect(() => {
     const savedHistory = localStorage.getItem('drillingSearchHistory');
+    let loadedHistory: SearchHistoryItem[] = [];
+    
     if (savedHistory) {
-      setSearchHistory(JSON.parse(savedHistory));
-    } else {
-      // Generate and save random drilling prospects if none exist
-      const randomProspects = generateRandomDrillingProspects();
-      setSearchHistory(randomProspects);
-      localStorage.setItem('drillingSearchHistory', JSON.stringify(randomProspects));
+      try {
+        loadedHistory = JSON.parse(savedHistory);
+        // Parse timestamp strings back to Date objects
+        loadedHistory = loadedHistory.map(item => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        }));
+      } catch (error) {
+        console.error('Error parsing saved drilling history:', error);
+        loadedHistory = [];
+      }
     }
+    
+    // If no history exists or array is empty, generate random prospects
+    if (!loadedHistory || loadedHistory.length === 0) {
+      console.log('No existing drilling history found, generating random prospects');
+      loadedHistory = generateRandomDrillingProspects();
+      localStorage.setItem('drillingSearchHistory', JSON.stringify(loadedHistory));
+    }
+    
+    setSearchHistory(loadedHistory);
   }, []);
 
   const generateRandomCoordinates = () => {
