@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -68,9 +69,9 @@ const ProjectDetails: React.FC = () => {
     const savedMetrics = localStorage.getItem(`projectMetrics_${id}`);
     if (savedMetrics) {
       const metrics = JSON.parse(savedMetrics);
-      setRecoveryRange(metrics.recoveryRange);
-      setGradeRange(metrics.gradeRange);
-      setTonnageRange(metrics.tonnageRange);
+      setRecoveryRange(metrics.recoveryRange || [70, 85]);
+      setGradeRange(metrics.gradeRange || [1.2, 2.8]);
+      setTonnageRange(metrics.tonnageRange || [45, 75]);
     }
   }, [id]);
 
@@ -117,11 +118,18 @@ const ProjectDetails: React.FC = () => {
   };
 
   const calculateNPV = () => {
+    // Add safety checks to prevent undefined access
+    if (!recoveryRange || !gradeRange || !tonnageRange || !project) {
+      return 0;
+    }
+
+    if (recoveryRange.length < 2 || gradeRange.length < 2 || tonnageRange.length < 2) {
+      return 0;
+    }
+
     const recoveryAvg = (recoveryRange[0] + recoveryRange[1]) / 2 / 100;
     const gradeAvg = (gradeRange[0] + gradeRange[1]) / 2;
     const tonnageAvg = (tonnageRange[0] + tonnageRange[1]) / 2;
-    
-    if (!project) return 0;
     
     let totalValue = 0;
     project.minerals.forEach(mineral => {
