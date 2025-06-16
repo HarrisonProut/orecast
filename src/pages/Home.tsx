@@ -27,6 +27,37 @@ const randomLocations = [
   { location: "Rocky Mountains", country: "United States" }
 ];
 
+// Generate random exploration sites
+const generateRandomProjects = (): ProjectData[] => {
+  const projects: ProjectData[] = [];
+  const mineralTypes: MineralType[] = ['Copper', 'Gold', 'Silver', 'Cobalt', 'Manganese', 'Iron'];
+  
+  for (let i = 1; i <= 5; i++) {
+    const randomLocation = randomLocations[Math.floor(Math.random() * randomLocations.length)];
+    const randomMinerals = mineralTypes
+      .sort(() => 0.5 - Math.random())
+      .slice(0, Math.floor(Math.random() * 3) + 1); // 1-3 minerals
+    
+    const minNpv = Math.floor(Math.random() * 50) + 30; // 30-80 million
+    const maxNpv = minNpv + Math.floor(Math.random() * 50) + 10; // 10-60 million more than minNpv
+    const npvRange = `$${minNpv}M - $${maxNpv}M`;
+    
+    projects.push({
+      id: `exploration-site-${i}`,
+      name: `Exploration site ${i}`,
+      location: randomLocation.location,
+      country: randomLocation.country,
+      cost: 'Not calculated using Drilling Cost Estimator',
+      npvRange,
+      minerals: randomMinerals,
+      createdDate: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString(), // Random date within last 30 days
+      status: 'N/A' as any,
+    });
+  }
+  
+  return projects;
+};
+
 const Home: React.FC = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -40,12 +71,17 @@ const Home: React.FC = () => {
   
   const { toast } = useToast();
   
-  // Load projects from localStorage on initial load
+  // Load projects from localStorage on initial load, or generate random ones if none exist
   useEffect(() => {
     const savedProjects = localStorage.getItem('explorationProjects');
     if (savedProjects) {
       const parsedProjects = JSON.parse(savedProjects);
       setProjects(parsedProjects);
+    } else {
+      // Generate and save random projects if none exist
+      const randomProjects = generateRandomProjects();
+      setProjects(randomProjects);
+      localStorage.setItem('explorationProjects', JSON.stringify(randomProjects));
     }
   }, []);
 

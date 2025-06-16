@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, Edit2, Check, X } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ProjectData } from '@/components/ProjectCard';
 import { MineralType } from '@/pages/DrillingCostEstimator';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Define financial metrics interface
@@ -29,20 +31,23 @@ interface SliderConfig {
   isRange: boolean;
 }
 
-// Define mineral price data with base figures
+// Updated mineral price data with new base figures
 const baseMineralPrices: Record<MineralType, { price: number; unit: string }> = {
-  'Copper': { price: 8765, unit: '$/tonne' },
-  'Gold': { price: 2048.75, unit: '$/oz' },
-  'Silver': { price: 24.92, unit: '$/oz' },
-  'Cobalt': { price: 55000, unit: '$/tonne' },
-  'Manganese': { price: 4200, unit: '$/tonne' },
-  'Iron': { price: 120, unit: '$/tonne' }
+  'Copper': { price: 9657.50, unit: '$/tonne' },
+  'Gold': { price: 3430.30, unit: '$/oz' },
+  'Silver': { price: 36.37, unit: '$/oz' },
+  'Cobalt': { price: 33331.79, unit: '$/tonne' },
+  'Manganese': { price: 2382.48, unit: '$/tonne' },
+  'Iron': { price: 104.68, unit: '$/tonne' }
 };
 
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<ProjectData | null>(null);
   const [liveMineralPrices, setLiveMineralPrices] = useState(baseMineralPrices);
+  const [flashingMinerals, setFlashingMinerals] = useState<Record<MineralType, boolean>>({} as Record<MineralType, boolean>);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
   const [metrics, setMetrics] = useState<FinancialMetrics>({
     npv: 63000000, // Default $63M
     irr: 8.3, // Default 8.3%
@@ -95,29 +100,39 @@ const ProjectDetails: React.FC = () => {
     }
   ]);
 
-  // Live pricing update effect
+  // Live pricing update effect with flash animation
   useEffect(() => {
     const updatePrices = () => {
       setLiveMineralPrices(prevPrices => {
         const updatedPrices = { ...prevPrices };
+        const flashUpdates: Record<MineralType, boolean> = {} as Record<MineralType, boolean>;
         
         Object.keys(updatedPrices).forEach(mineral => {
           const mineralKey = mineral as MineralType;
           const basePrice = baseMineralPrices[mineralKey].price;
           
-          // Generate small random change (±0.5% to ±2%)
-          const changePercent = (Math.random() - 0.5) * 4; // -2% to +2%
+          // Generate small random change (±0.1% to ±0.5%)
+          const changePercent = (Math.random() - 0.5) * 1; // -0.5% to +0.5%
           const changeAmount = basePrice * (changePercent / 100);
           
           // Apply change to current price, but keep it within reasonable bounds
           const currentPrice = updatedPrices[mineralKey].price;
-          const newPrice = Math.max(basePrice * 0.85, Math.min(basePrice * 1.15, currentPrice + changeAmount));
+          const newPrice = Math.max(basePrice * 0.95, Math.min(basePrice * 1.05, currentPrice + changeAmount));
+          
+          // Check if price actually changed
+          if (Math.abs(newPrice - currentPrice) > 0.01) {
+            flashUpdates[mineralKey] = true;
+          }
           
           updatedPrices[mineralKey] = {
             ...updatedPrices[mineralKey],
             price: Math.round(newPrice * 100) / 100 // Round to 2 decimal places
           };
         });
+        
+        // Trigger flash animation for changed prices
+        setFlashingMinerals(flashUpdates);
+        setTimeout(() => setFlashingMinerals({} as Record<MineralType, boolean>), 500);
         
         return updatedPrices;
       });
@@ -138,6 +153,7 @@ const ProjectDetails: React.FC = () => {
         const foundProject = projects.find(p => p.id === id);
         if (foundProject) {
           setProject(foundProject);
+          setEditedName(foundProject.name);
           
           // Load saved metrics if they exist
           const savedMetrics = localStorage.getItem(`projectMetrics_${id}`);
@@ -164,10 +180,8 @@ const ProjectDetails: React.FC = () => {
         : (sliders.find(s => s.id === 'time-of-project')?.value as [number, number])?.[0] || 5;
       const data = [];
       
-      // Initial investment (negative)
       data.push({ year: 0, value: -15000000 });
       
-      // Generate cash flows with increasing values
       for (let i = 1; i <= years; i++) {
         const yearValue = (metrics.npv / years) * (1 + (i / 10)) * (i / years);
         data.push({ year: i, value: Math.round(yearValue) });
@@ -176,13 +190,12 @@ const ProjectDetails: React.FC = () => {
       return data;
     };
     
-    // Generate payback data
     const generatePaybackData = () => {
       const years = typeof sliders.find(s => s.id === 'time-of-project')?.value === 'number'
         ? sliders.find(s => s.id === 'time-of-project')?.value as number || 5
         : (sliders.find(s => s.id === 'time-of-project')?.value as [number, number])?.[0] || 5;
       const data = [];
-      let cumulativeValue = -15000000; // Initial investment
+      let cumulativeValue = -15000000;
       
       data.push({ year: 0, value: cumulativeValue });
       
@@ -205,45 +218,42 @@ const ProjectDetails: React.FC = () => {
     }));
   }, [metrics.npv, sliders]);
 
-  // Update financial metrics when sliders change AND save to localStorage
+  // Update financial metrics when sliders change AND save to localStorage - FIXED to use range values
   useEffect(() => {
     const calculateMetrics = () => {
-      const depositSize = typeof sliders.find(s => s.id === 'deposit-size')?.value === 'number' 
-        ? sliders.find(s => s.id === 'deposit-size')?.value as number || 500
-        : (sliders.find(s => s.id === 'deposit-size')?.value as [number, number])?.[0] || 500;
+      // Get slider values, using average for ranges or single value
+      const getSliderValue = (sliderId: string) => {
+        const slider = sliders.find(s => s.id === sliderId);
+        if (!slider) return 500; // default
+        
+        if (Array.isArray(slider.value)) {
+          // For ranges, use average of min and max
+          return (slider.value[0] + slider.value[1]) / 2;
+        }
+        return slider.value as number;
+      };
       
-      const mineralQuality = typeof sliders.find(s => s.id === 'mineral-quality')?.value === 'number'
-        ? sliders.find(s => s.id === 'mineral-quality')?.value as number || 7
-        : (sliders.find(s => s.id === 'mineral-quality')?.value as [number, number])?.[0] || 7;
-      
-      const capexInvestment = typeof sliders.find(s => s.id === 'capex-investment')?.value === 'number'
-        ? sliders.find(s => s.id === 'capex-investment')?.value as number || 500
-        : (sliders.find(s => s.id === 'capex-investment')?.value as [number, number])?.[0] || 500;
-      
-      const projectTime = typeof sliders.find(s => s.id === 'time-of-project')?.value === 'number'
-        ? sliders.find(s => s.id === 'time-of-project')?.value as number || 5
-        : (sliders.find(s => s.id === 'time-of-project')?.value as [number, number])?.[0] || 5;
+      const depositSize = getSliderValue('deposit-size');
+      const mineralQuality = getSliderValue('mineral-quality');
+      const capexInvestment = getSliderValue('capex-investment');
+      const projectTime = getSliderValue('time-of-project');
 
-      // Base NPV calculation with some randomization
+      // Base NPV calculation
       const baseNpv = 63000000;
       
-      // Apply slider effects
-      const depositEffect = (depositSize / 500) * 0.7; // 70% impact
-      const qualityEffect = (mineralQuality / 7) * 0.3; // 30% impact
-      const capexEffect = (1 - (capexInvestment / 500)) * 0.4; // 40% impact (inverse)
-      const timeEffect = (1 - (projectTime / 5)) * 0.2; // 20% impact (inverse)
+      // Apply slider effects (using average values for ranges)
+      const depositEffect = (depositSize / 500) * 0.7;
+      const qualityEffect = (mineralQuality / 7) * 0.3;
+      const capexEffect = (1 - (capexInvestment / 500)) * 0.4;
+      const timeEffect = (1 - (projectTime / 5)) * 0.2;
       
-      // Combined multiplier for NPV
       const multiplier = 0.3 + (depositEffect + qualityEffect + capexEffect + timeEffect);
       const newNpv = Math.round(baseNpv * multiplier);
       
-      // Calculate IRR based on NPV
-      // Higher NPV generally means higher IRR
       const baseIrr = 8.3;
-      const irrMultiplier = Math.sqrt(newNpv / baseNpv); // Non-linear relationship
+      const irrMultiplier = Math.sqrt(newNpv / baseNpv);
       const newIrr = Math.round(baseIrr * irrMultiplier * 10) / 10;
       
-      // Calculate payback period (inversely related to NPV)
       const basePayback = 8;
       const paybackMultiplier = baseNpv / newNpv;
       const newPayback = Math.round(basePayback * paybackMultiplier * 10) / 10;
@@ -259,7 +269,6 @@ const ProjectDetails: React.FC = () => {
         ...newMetrics
       }));
 
-      // Save metrics to localStorage so they're reflected on home page
       if (id) {
         localStorage.setItem(`projectMetrics_${id}`, JSON.stringify(newMetrics));
       }
@@ -297,6 +306,27 @@ const ProjectDetails: React.FC = () => {
           : slider
       )
     );
+  };
+
+  // Handle project name editing
+  const handleSaveName = () => {
+    if (project && editedName.trim()) {
+      const savedProjects = localStorage.getItem('explorationProjects');
+      if (savedProjects) {
+        const projects: ProjectData[] = JSON.parse(savedProjects);
+        const updatedProjects = projects.map(p => 
+          p.id === project.id ? { ...p, name: editedName.trim() } : p
+        );
+        localStorage.setItem('explorationProjects', JSON.stringify(updatedProjects));
+        setProject({ ...project, name: editedName.trim() });
+      }
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(project?.name || '');
+    setIsEditingName(false);
   };
 
   // Format currency
@@ -339,9 +369,42 @@ const ProjectDetails: React.FC = () => {
         </Link>
       </div>
       
-      {/* Header */}
+      {/* Header with editable name */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{project.name}</h1>
+        <div className="flex items-center gap-2 mb-2">
+          {isEditingName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                className="text-2xl font-bold border-none p-0 h-auto"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveName();
+                  if (e.key === 'Escape') handleCancelEdit();
+                }}
+              />
+              <Button size="sm" onClick={handleSaveName} className="h-8 w-8 p-0">
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 w-8 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold">{project.name}</h1>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => setIsEditingName(true)}
+                className="h-8 w-8 p-0"
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
         <p className="text-gray-600">{project.location}, {project.country}</p>
         <p className="text-sm text-gray-500">Coordinates: Lat: 45.1786, Long: -123.121</p>
       </div>
@@ -374,7 +437,7 @@ const ProjectDetails: React.FC = () => {
           <p className="text-gray-500 mb-4">Adjust parameters to see impact on project metrics</p>
           
           <div className="space-y-8">
-            {/* Mineral Prices Section */}
+            {/* Mineral Prices Section with flash animation */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Mineral Prices (Live)</h3>
               <div className="grid grid-cols-1 gap-4">
@@ -383,7 +446,9 @@ const ProjectDetails: React.FC = () => {
                     <span className={`font-medium ${getMineralColor(mineral).split(' ')[0]}`}>
                       {mineral}
                     </span>
-                    <span className="font-semibold">
+                    <span className={`font-semibold transition-all duration-300 ${
+                      flashingMinerals[mineral] ? 'bg-yellow-200 scale-110' : ''
+                    }`}>
                       {liveMineralPrices[mineral]?.price.toLocaleString()} {liveMineralPrices[mineral]?.unit}
                     </span>
                   </div>
@@ -488,7 +553,6 @@ const ProjectDetails: React.FC = () => {
             </AccordionItem>
           </Accordion>
           
-          {/* IRR */}
           <Accordion type="single" collapsible className="mb-4">
             <AccordionItem value="irr">
               <AccordionTrigger className="py-2">
@@ -517,7 +581,6 @@ const ProjectDetails: React.FC = () => {
             </AccordionItem>
           </Accordion>
           
-          {/* Payback Period */}
           <Accordion type="single" collapsible className="mb-4">
             <AccordionItem value="payback">
               <AccordionTrigger className="py-2">
@@ -547,7 +610,6 @@ const ProjectDetails: React.FC = () => {
                         strokeWidth={2} 
                         dot={{ fill: '#3b82f6', r: 4 }}
                       />
-                      {/* Add a reference line at y=0 to show payback threshold */}
                       <CartesianGrid horizontal={true} vertical={false} strokeDasharray="3 3" strokeOpacity={0.5} />
                     </LineChart>
                   </ResponsiveContainer>
