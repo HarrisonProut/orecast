@@ -117,6 +117,73 @@ const getMapImageForCountry = (country: string) => {
   return countryImages[country] || 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop';
 };
 
+// Generate random drilling prospects
+const generateRandomDrillingProspects = (): SearchHistoryItem[] => {
+  const prospects: SearchHistoryItem[] = [];
+  const mineralTypes: MineralType[] = ['Copper', 'Gold', 'Silver', 'Cobalt', 'Manganese', 'Iron'];
+  
+  for (let i = 1; i <= 5; i++) {
+    const randomLocation = randomLocations[Math.floor(Math.random() * randomLocations.length)];
+    const randomMinerals = mineralTypes
+      .sort(() => 0.5 - Math.random())
+      .slice(0, Math.floor(Math.random() * 3) + 1); // 1-3 minerals
+    
+    const randomMethod = drillingMethods[Math.floor(Math.random() * drillingMethods.length)];
+    const randomTerrain = terrainTypes[Math.floor(Math.random() * terrainTypes.length)];
+    
+    const depth = 200 + Math.floor(Math.random() * 300); // 200-500m
+    const budget = 400000 + Math.floor(Math.random() * 600000); // $400k-$1M
+    
+    const baseDepth = 720;
+    const randomFactor = 0.7 + (Math.random() * 0.6);
+    const depthMultiplier = Math.max(1, depth / 200);
+    const averageCost = Math.round(baseDepth * depth * randomFactor * depthMultiplier);
+    const conservativeCost = Math.round(averageCost * 1.3);
+    const ambitiousCost = Math.round(averageCost * 0.8);
+    
+    const costData = [
+      { name: 'Ambitious', cost: ambitiousCost },
+      { name: 'Average', cost: averageCost },
+      { name: 'Conservative', cost: conservativeCost }
+    ];
+    
+    const costPerMeterData = costData.map(item => ({
+      name: item.name,
+      cost: Math.round(item.cost / depth)
+    }));
+    
+    const laborPercentage = 0.4 + Math.random() * 0.2;
+    const laborCost = Math.round(averageCost * laborPercentage);
+    const hardwareCost = averageCost - laborCost;
+    
+    prospects.push({
+      id: `drilling-prospect-${i}`,
+      name: `Drilling prospect ${i}`,
+      latitude: (Math.random() * 180 - 90).toFixed(4),
+      longitude: (Math.random() * 360 - 180).toFixed(4),
+      depth: depth.toString(),
+      budget: budget.toString(),
+      timestamp: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
+      locationDetails: randomLocation,
+      costData,
+      costPerMeterData,
+      costRange: `$${Math.min(...costData.map(d => d.cost)).toLocaleString()} - $${Math.max(...costData.map(d => d.cost)).toLocaleString()}`,
+      costPerMeterRange: `$${Math.min(...costPerMeterData.map(d => d.cost)).toLocaleString()} - $${Math.max(...costPerMeterData.map(d => d.cost)).toLocaleString()}`,
+      selectedMinerals: randomMinerals,
+      costBreakdown: { labor: laborCost, hardware: hardwareCost },
+      drillingMethod: randomMethod,
+      terrain: randomTerrain,
+      timeEstimation: `${Math.ceil(depth / 100)}-${Math.ceil(depth / 100) + 2} weeks`,
+      budgetAnalysis: {
+        maxMeters: Math.floor(budget / (averageCost / depth)),
+        maxHoles: Math.floor((budget / (averageCost / depth)) / depth)
+      }
+    });
+  }
+  
+  return prospects;
+};
+
 const DrillingCostEstimator: React.FC = () => {
   const [latitude, setLatitude] = useState<string>('');
   const [longitude, setLongitude] = useState<string>('');
@@ -142,11 +209,16 @@ const DrillingCostEstimator: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Load search history from localStorage
+  // Load search history from localStorage or generate random ones
   useEffect(() => {
     const savedHistory = localStorage.getItem('drillingSearchHistory');
     if (savedHistory) {
       setSearchHistory(JSON.parse(savedHistory));
+    } else {
+      // Generate and save random drilling prospects if none exist
+      const randomProspects = generateRandomDrillingProspects();
+      setSearchHistory(randomProspects);
+      localStorage.setItem('drillingSearchHistory', JSON.stringify(randomProspects));
     }
   }, []);
 
@@ -451,7 +523,7 @@ const DrillingCostEstimator: React.FC = () => {
           className="bg-mining-primary hover:bg-mining-secondary"
           onClick={navigateToCompare}
         >
-          <BarChart2 className="mr-2 h-4 w-4" /> Compare Exploration Sites
+          <BarChart2 className="mr-2 h-4 w-4" /> Compare Drilling Sites
         </Button>
       </div>
 

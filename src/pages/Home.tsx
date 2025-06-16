@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ProjectCard, { ProjectData } from '@/components/ProjectCard';
 import { Plus } from 'lucide-react';
@@ -27,12 +26,12 @@ const randomLocations = [
   { location: "Rocky Mountains", country: "United States" }
 ];
 
-// Generate random exploration sites
+// Generate random exploration projects
 const generateRandomProjects = (): ProjectData[] => {
   const projects: ProjectData[] = [];
   const mineralTypes: MineralType[] = ['Copper', 'Gold', 'Silver', 'Cobalt', 'Manganese', 'Iron'];
   
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     const randomLocation = randomLocations[Math.floor(Math.random() * randomLocations.length)];
     const randomMinerals = mineralTypes
       .sort(() => 0.5 - Math.random())
@@ -43,8 +42,8 @@ const generateRandomProjects = (): ProjectData[] => {
     const npvRange = `$${minNpv}M - $${maxNpv}M`;
     
     projects.push({
-      id: `exploration-site-${i}`,
-      name: `Exploration site ${i}`,
+      id: `exploration-project-${i}`,
+      name: `Exploration project ${i}`,
       location: randomLocation.location,
       country: randomLocation.country,
       cost: 'Not calculated using Drilling Cost Estimator',
