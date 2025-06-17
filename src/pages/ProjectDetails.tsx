@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 // Define financial metrics interface
 interface FinancialMetrics {
@@ -41,6 +40,18 @@ const baseMineralPrices: Record<MineralType, { price: number; unit: string }> = 
   'Manganese': { price: 2382.48, unit: '$/tonne' },
   'Iron': { price: 104.68, unit: '$/tonne' }
 };
+
+// Landscape images for different locations
+const landscapeImages = [
+  'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=1000&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1000&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=1000&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=1000&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1000&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1000&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1000&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1615729947596-a598e5de0ab3?w=1000&h=400&fit=crop'
+];
 
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -351,6 +362,21 @@ const ProjectDetails: React.FC = () => {
     }
   };
 
+  // Function to get project image
+  const getProjectImage = () => {
+    if (project?.fromDrillingEstimator) {
+      // Check if there's a saved image from drilling estimator
+      const savedImage = localStorage.getItem(`drillingImage_${id}`);
+      if (savedImage) {
+        return savedImage;
+      }
+    }
+    
+    // Use a consistent random image based on project ID
+    const imageIndex = project ? Math.abs(project.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % landscapeImages.length : 0;
+    return landscapeImages[imageIndex];
+  };
+
   // Download PDF report function
   const downloadPDFReport = async () => {
     if (!project) return;
@@ -558,8 +584,15 @@ const ProjectDetails: React.FC = () => {
       {/* Location Map */}
       <div className="border rounded-lg p-6 bg-white shadow-sm mb-8">
         <h2 className="text-xl font-semibold mb-4">Location Map</h2>
-        <div className="bg-[url('https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/0,0,3,0/1000x400?access_token=pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xneng1Mmp4MHRkYzNpcXl5ZDZ6Y2lyNSJ9.3jkU624v1hwRIm46HJbHMw')] rounded-md h-64 flex items-center justify-center bg-cover relative">
-          <MapPin className="h-10 w-10 text-mining-primary drop-shadow-lg" />
+        <div className="relative rounded-md h-64 overflow-hidden">
+          <img 
+            src={getProjectImage()} 
+            alt={`${project.location} landscape`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+            <MapPin className="h-10 w-10 text-white drop-shadow-lg" />
+          </div>
         </div>
         <div className="mt-4 bg-gray-50 border rounded-md p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

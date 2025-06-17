@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
 
 // Define the SearchHistoryItem type to match drilling cost estimator
 type SearchHistoryItem = {
@@ -41,6 +41,7 @@ type SearchHistoryItem = {
 };
 
 const ExplorationComparison: React.FC = () => {
+  const navigate = useNavigate();
   const [drillingProjects, setDrillingProjects] = useState<SearchHistoryItem[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -170,8 +171,20 @@ const ExplorationComparison: React.FC = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Compare Drilling Sites</h1>
-        <p className="text-gray-600">Select drilling sites to compare their key metrics and details</p>
+        <div className="flex items-center gap-4 mb-4">
+          <Button
+            variant="outline"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Compare Drilling Sites</h1>
+            <p className="text-gray-600">Select drilling sites to compare their key metrics and details</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

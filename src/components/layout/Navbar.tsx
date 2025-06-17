@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,11 +21,12 @@ const Navbar: React.FC = () => {
   return (
     <nav className="border-b border-gray-200 bg-white py-4 px-6">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="bg-mining-primary p-2 rounded-full">
-            <Layers className="h-6 w-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-mining-primary">OreCast</span>
+        <Link to="/" className="flex items-center gap-3">
+          <img 
+            src="/lovable-uploads/c290c526-3753-49a8-85f5-11913f94f53c.png" 
+            alt="Geognosis OreCast" 
+            className="h-8"
+          />
         </Link>
         
         <div className="flex gap-6 items-center">
