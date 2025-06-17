@@ -169,103 +169,118 @@ const ExplorationComparison: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Compare Drilling Sites</h1>
-            <p className="text-gray-600">Select drilling sites to compare their key metrics and details</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left sidebar - Search History */}
-        <div className="lg:col-span-1">
-          <div className="border rounded-lg p-4 bg-white shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">Drilling History</h2>
-            
-            {/* Search input */}
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search drilling sites..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            {/* Project list */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {filteredProjects.map((project) => (
-                <div 
-                  key={project.id}
-                  className={`p-3 rounded-md border cursor-pointer transition-colors ${
-                    selectedProjects.includes(project.id)
-                      ? 'bg-blue-50 border-blue-200'
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                  }`}
-                  onClick={() => toggleProjectSelection(project.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm truncate">{project.name}</h3>
-                      <p className="text-xs text-gray-600 truncate">{project.locationDetails.name}, {project.locationDetails.country}</p>
-                      <p className="text-xs text-mining-primary font-semibold">
-                        {project.costPerMeterRange}/m
-                      </p>
-                    </div>
-                    <div className="ml-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedProjects.includes(project.id)}
-                        onChange={() => toggleProjectSelection(project.id)}
-                        className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {filteredProjects.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No drilling sites found matching your search.
-                </p>
-              )}
-            </div>
-            
-            {selectedProjects.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-sm text-gray-600 mb-2">
-                  Selected: {selectedProjects.length} sites
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedProjects([])}
-                  className="w-full"
-                >
-                  Clear Selection
-                </Button>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1">
+        <div className="container mx-auto py-8 px-4">
+          <div className="mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Button
+                variant="outline"
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Compare Drilling Sites</h1>
+                <p className="text-gray-600">Select drilling sites to compare their key metrics and details</p>
               </div>
-            )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left sidebar - Search History */}
+            <div className="lg:col-span-1">
+              <div className="border rounded-lg p-4 bg-white shadow-sm">
+                <h2 className="text-lg font-semibold mb-4">Drilling History</h2>
+                
+                {/* Search input */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search drilling sites..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                {/* Project list */}
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredProjects.map((project) => (
+                    <div 
+                      key={project.id}
+                      className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                        selectedProjects.includes(project.id)
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                      onClick={() => toggleProjectSelection(project.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm truncate">{project.name}</h3>
+                          <p className="text-xs text-gray-600 truncate">{project.locationDetails.name}, {project.locationDetails.country}</p>
+                          <p className="text-xs text-mining-primary font-semibold">
+                            {project.costPerMeterRange}/m
+                          </p>
+                        </div>
+                        <div className="ml-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedProjects.includes(project.id)}
+                            onChange={() => toggleProjectSelection(project.id)}
+                            className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {filteredProjects.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No drilling sites found matching your search.
+                    </p>
+                  )}
+                </div>
+                
+                {selectedProjects.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Selected: {selectedProjects.length} sites
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={()={() => setSelectedProjects([])}
+                      className="w-full"
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right content - Comparison */}
+            <div className="lg:col-span-3">
+              {renderSelectedProjects()}
+            </div>
           </div>
         </div>
-
-        {/* Right content - Comparison */}
-        <div className="lg:col-span-3">
-          {renderSelectedProjects()}
-        </div>
       </div>
+      
+      {/* Footer */}
+      <footer className="py-4 bg-white border-t border-gray-200">
+        <div className="container mx-auto flex justify-center">
+          <img 
+            src="/lovable-uploads/6f649b14-e4cc-4507-8e7c-f01855797ce5.png" 
+            alt="Footer Logo" 
+            className="h-10"
+          />
+        </div>
+      </footer>
     </div>
   );
 };

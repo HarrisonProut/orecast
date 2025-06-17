@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
           <img 
             src="/lovable-uploads/c290c526-3753-49a8-85f5-11913f94f53c.png" 
             alt="Geognosis OreCast" 
-            className="h-8"
+            className="h-10"
           />
         </Link>
         
