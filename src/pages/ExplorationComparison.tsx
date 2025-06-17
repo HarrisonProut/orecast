@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
+import Footer from '@/components/layout/Footer';
 
 // Define the SearchHistoryItem type to match drilling cost estimator
 type SearchHistoryItem = {
@@ -253,7 +255,7 @@ const ExplorationComparison: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={()={() => setSelectedProjects([])}
+                      onClick={() => setSelectedProjects([])}
                       className="w-full"
                     >
                       Clear Selection
@@ -271,16 +273,7 @@ const ExplorationComparison: React.FC = () => {
         </div>
       </div>
       
-      {/* Footer */}
-      <footer className="py-4 bg-white border-t border-gray-200">
-        <div className="container mx-auto flex justify-center">
-          <img 
-            src="/lovable-uploads/6f649b14-e4cc-4507-8e7c-f01855797ce5.png" 
-            alt="Footer Logo" 
-            className="h-10"
-          />
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
