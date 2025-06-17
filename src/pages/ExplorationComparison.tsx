@@ -61,15 +61,14 @@ const ExplorationComparison: React.FC = () => {
     project.locationDetails.country.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Toggle project selection (max 3)
+  // Toggle project selection (no limit)
   const toggleProjectSelection = (projectId: string) => {
     setSelectedProjects(prev => {
       if (prev.includes(projectId)) {
         return prev.filter(id => id !== projectId);
-      } else if (prev.length < 3) {
+      } else {
         return [...prev, projectId];
       }
-      return prev; // Don't add if already at max
     });
   };
 
@@ -78,148 +77,92 @@ const ExplorationComparison: React.FC = () => {
     drillingProjects.find(p => p.id === id)
   ).filter(Boolean) as SearchHistoryItem[];
 
-  // Render first 3 selected projects side by side, rest below
+  // Render project card component
+  const ProjectCard = ({ project }: { project: SearchHistoryItem }) => (
+    <div className="border rounded-lg p-6 bg-white shadow-sm">
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <h3 className="text-xl font-bold mb-2">{project.name}</h3>
+          <div className="flex items-center gap-1 text-gray-600 mb-2">
+            <MapPin className="h-4 w-4" />
+            <span>{project.locationDetails.name}, {project.locationDetails.country}</span>
+          </div>
+          {/* Prominent cost per meter */}
+          <div className="text-right mb-2">
+            <span className="text-2xl font-bold text-mining-primary">
+              {project.costPerMeterRange}/m
+            </span>
+            <p className="text-sm text-gray-500">Cost per meter</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Total cost:</span>
+          <span className="font-semibold text-gray-800">{project.costRange}</span>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Drilling depth:</span>
+          <span className="font-semibold text-gray-800">{project.depth}m</span>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Budget:</span>
+          <span className="font-semibold text-gray-800">${parseInt(project.budget || '0').toLocaleString()}</span>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Method:</span>
+          <span className="font-semibold text-green-600">{project.drillingMethod}</span>
+        </div>
+        
+        <div>
+          <span className="text-gray-600 text-sm mb-2 block">Mineral targets:</span>
+          <div className="flex flex-wrap gap-1">
+            {project.selectedMinerals.map((mineral) => (
+              <span key={mineral} className="inline-block bg-mining-primary/20 text-mining-primary text-xs px-2 py-1 rounded-md">
+                {mineral}
+              </span>
+            ))}
+          </div>
+        </div>
+        
+        <div className="pt-2 border-t border-gray-100">
+          <span className="text-sm text-gray-500">
+            Created: {new Date(project.timestamp).toLocaleDateString('en-GB')}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render selected projects with unlimited support
   const renderSelectedProjects = () => {
     if (selectedProjectData.length === 0) {
       return (
         <div className="text-center py-16 text-gray-500">
-          <p className="text-lg">Select up to 3 drilling sites from the search history to compare them</p>
+          <p className="text-lg">Select drilling sites from the search history to compare them</p>
         </div>
       );
     }
 
-    const topRowProjects = selectedProjectData.slice(0, 3);
-    const bottomRowProjects = selectedProjectData.slice(3);
+    // Group projects in rows of 3
+    const projectRows = [];
+    for (let i = 0; i < selectedProjectData.length; i += 3) {
+      projectRows.push(selectedProjectData.slice(i, i + 3));
+    }
 
     return (
       <div className="space-y-6">
-        {/* Top row - up to 3 projects side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {topRowProjects.map((project) => (
-            <div key={project.id} className="border rounded-lg p-6 bg-white shadow-sm">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">{project.name}</h3>
-                  <div className="flex items-center gap-1 text-gray-600 mb-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{project.locationDetails.name}, {project.locationDetails.country}</span>
-                  </div>
-                  {/* Prominent cost per meter */}
-                  <div className="text-right mb-2">
-                    <span className="text-2xl font-bold text-mining-primary">
-                      {project.costPerMeterRange}/m
-                    </span>
-                    <p className="text-sm text-gray-500">Cost per meter</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Total cost:</span>
-                  <span className="font-semibold text-gray-800">{project.costRange}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Drilling depth:</span>
-                  <span className="font-semibold text-gray-800">{project.depth}m</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Budget:</span>
-                  <span className="font-semibold text-gray-800">${parseInt(project.budget || '0').toLocaleString()}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Method:</span>
-                  <span className="font-semibold text-green-600">{project.drillingMethod}</span>
-                </div>
-                
-                <div>
-                  <span className="text-gray-600 text-sm mb-2 block">Mineral targets:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {project.selectedMinerals.map((mineral) => (
-                      <span key={mineral} className="inline-block bg-mining-primary/20 text-mining-primary text-xs px-2 py-1 rounded-md">
-                        {mineral}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="pt-2 border-t border-gray-100">
-                  <span className="text-sm text-gray-500">
-                    Created: {new Date(project.timestamp).toLocaleDateString('en-GB')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom row - additional projects if more than 3 selected */}
-        {bottomRowProjects.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {bottomRowProjects.map((project) => (
-              <div key={project.id} className="border rounded-lg p-6 bg-white shadow-sm">
-                {/* Same content as above */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-2">{project.name}</h3>
-                    <div className="flex items-center gap-1 text-gray-600 mb-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{project.locationDetails.name}, {project.locationDetails.country}</span>
-                    </div>
-                    <div className="text-right mb-2">
-                      <span className="text-2xl font-bold text-mining-primary">
-                        {project.costPerMeterRange}/m
-                      </span>
-                      <p className="text-sm text-gray-500">Cost per meter</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Total cost:</span>
-                    <span className="font-semibold text-gray-800">{project.costRange}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Drilling depth:</span>
-                    <span className="font-semibold text-gray-800">{project.depth}m</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Budget:</span>
-                    <span className="font-semibold text-gray-800">${parseInt(project.budget || '0').toLocaleString()}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Method:</span>
-                    <span className="font-semibold text-green-600">{project.drillingMethod}</span>
-                  </div>
-                  
-                  <div>
-                    <span className="text-gray-600 text-sm mb-2 block">Mineral targets:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {project.selectedMinerals.map((mineral) => (
-                        <span key={mineral} className="inline-block bg-mining-primary/20 text-mining-primary text-xs px-2 py-1 rounded-md">
-                          {mineral}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t border-gray-100">
-                    <span className="text-sm text-gray-500">
-                      Created: {new Date(project.timestamp).toLocaleDateString('en-GB')}
-                    </span>
-                  </div>
-                </div>
-              </div>
+        {projectRows.map((rowProjects, rowIndex) => (
+          <div key={rowIndex} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rowProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
             ))}
           </div>
-        )}
+        ))}
       </div>
     );
   };
@@ -228,7 +171,7 @@ const ExplorationComparison: React.FC = () => {
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Compare Drilling Sites</h1>
-        <p className="text-gray-600">Select up to 3 drilling sites to compare their key metrics and details</p>
+        <p className="text-gray-600">Select drilling sites to compare their key metrics and details</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -273,7 +216,6 @@ const ExplorationComparison: React.FC = () => {
                         type="checkbox"
                         checked={selectedProjects.includes(project.id)}
                         onChange={() => toggleProjectSelection(project.id)}
-                        disabled={!selectedProjects.includes(project.id) && selectedProjects.length >= 3}
                         className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                       />
                     </div>
@@ -291,7 +233,7 @@ const ExplorationComparison: React.FC = () => {
             {selectedProjects.length > 0 && (
               <div className="mt-4 pt-4 border-t">
                 <p className="text-sm text-gray-600 mb-2">
-                  Selected: {selectedProjects.length}/3 sites
+                  Selected: {selectedProjects.length} sites
                 </p>
                 <Button
                   variant="outline"

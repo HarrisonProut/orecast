@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Edit2, Check, X } from 'lucide-react';
+import { MapPin, Edit2, Check, X, Download } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ProjectData } from '@/components/ProjectCard';
@@ -9,6 +8,8 @@ import { MineralType } from '@/pages/DrillingCostEstimator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Define financial metrics interface
 interface FinancialMetrics {
@@ -350,6 +351,140 @@ const ProjectDetails: React.FC = () => {
     }
   };
 
+  // Download PDF report function
+  const downloadPDFReport = async () => {
+    if (!project) return;
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let yPos = 20;
+
+    // Header
+    pdf.setFontSize(24);
+    pdf.setTextColor(31, 41, 55); // Gray-800
+    pdf.text(project.name || 'Project Report', 20, yPos);
+    yPos += 15;
+
+    pdf.setFontSize(12);
+    pdf.setTextColor(107, 114, 128); // Gray-500
+    pdf.text(`Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString()}`, 20, yPos);
+    yPos += 10;
+    pdf.text(`Location: ${project.location}, ${project.country}`, 20, yPos);
+    yPos += 20;
+
+    // Executive Summary
+    pdf.setFontSize(18);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text('Executive Summary', 20, yPos);
+    yPos += 15;
+
+    pdf.setFontSize(12);
+    pdf.setTextColor(55, 65, 81);
+    
+    // Key Financial Metrics
+    pdf.text(`Net Present Value: ${formatCurrency(metrics.npv)}`, 20, yPos);
+    yPos += 8;
+    pdf.text(`Internal Rate of Return: ${metrics.irr}%`, 20, yPos);
+    yPos += 8;
+    pdf.text(`Payback Period: ${metrics.paybackPeriod} years`, 20, yPos);
+    yPos += 15;
+
+    // Current Mineral Prices
+    pdf.setFontSize(16);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text('Current Mineral Prices', 20, yPos);
+    yPos += 10;
+
+    pdf.setFontSize(10);
+    project.minerals.forEach(mineral => {
+      pdf.text(`${mineral}: ${liveMineralPrices[mineral]?.price.toLocaleString()} ${liveMineralPrices[mineral]?.unit}`, 20, yPos);
+      yPos += 6;
+    });
+    yPos += 10;
+
+    // Project Inputs
+    pdf.setFontSize(16);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text('Project Inputs', 20, yPos);
+    yPos += 10;
+
+    pdf.setFontSize(10);
+    sliders.forEach(slider => {
+      const value = Array.isArray(slider.value) 
+        ? `${slider.value[0]} - ${slider.value[1]} ${slider.unit}`
+        : `${slider.value} ${slider.unit}`;
+      pdf.text(`${slider.name}: ${value}`, 20, yPos);
+      yPos += 6;
+    });
+    yPos += 10;
+
+    // Drilling Cost Information
+    if (project.cost && project.cost !== 'Not calculated using Drilling Cost Estimator') {
+      pdf.setFontSize(16);
+      pdf.setTextColor(31, 41, 55);
+      pdf.text('Exploration Drilling Cost', 20, yPos);
+      yPos += 10;
+
+      pdf.setFontSize(10);
+      pdf.text(`Estimated Cost: ${project.cost}`, 20, yPos);
+      yPos += 6;
+      if (project.costRange) {
+        pdf.text(`Cost Range: ${project.costRange}`, 20, yPos);
+        yPos += 6;
+      }
+      pdf.text('Drilling Method: Reverse Circulation', 20, yPos);
+      yPos += 6;
+      pdf.text('Estimated Duration: 3-4 weeks', 20, yPos);
+      yPos += 6;
+      pdf.text('Depth: 350m', 20, yPos);
+      yPos += 6;
+      pdf.text('Core Samples: Required', 20, yPos);
+      yPos += 10;
+    }
+
+    // Financial Analysis
+    if (yPos > pageHeight - 50) {
+      pdf.addPage();
+      yPos = 20;
+    }
+
+    pdf.setFontSize(16);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text('Financial Analysis', 20, yPos);
+    yPos += 15;
+
+    pdf.setFontSize(12);
+    pdf.text('NPV Analysis:', 20, yPos);
+    yPos += 8;
+    pdf.setFontSize(10);
+    pdf.text(`The Net Present Value of ${formatCurrency(metrics.npv)} suggests a strong potential`, 20, yPos);
+    yPos += 6;
+    pdf.text('for profit generation with this project.', 20, yPos);
+    yPos += 10;
+
+    pdf.setFontSize(12);
+    pdf.text('Key Influencing Factors:', 20, yPos);
+    yPos += 8;
+    pdf.setFontSize(10);
+    pdf.text('• Metal price projection', 25, yPos);
+    yPos += 6;
+    pdf.text('• Deposit grade and tonnage', 25, yPos);
+    yPos += 6;
+    pdf.text('• Capital investment required', 25, yPos);
+    yPos += 6;
+    pdf.text('• Timing of cash flows', 25, yPos);
+    yPos += 15;
+
+    // Footer
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('This report is generated automatically and should be reviewed by qualified professionals.', 20, pageHeight - 20);
+    pdf.text(`Page 1 of 1 - Generated by Mining Exploration Platform`, 20, pageHeight - 10);
+
+    // Save the PDF
+    pdf.save(`${project.name || 'project'}-report-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   if (!project) {
     return (
       <div className="container mx-auto py-10 px-4 text-center">
@@ -369,41 +504,52 @@ const ProjectDetails: React.FC = () => {
         </Link>
       </div>
       
-      {/* Header with editable name */}
+      {/* Header with editable name and download button */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          {isEditingName ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                className="text-2xl font-bold border-none p-0 h-auto"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveName();
-                  if (e.key === 'Escape') handleCancelEdit();
-                }}
-              />
-              <Button size="sm" onClick={handleSaveName} className="h-8 w-8 p-0">
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 w-8 p-0">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold">{project.name}</h1>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={() => setIsEditingName(true)}
-                className="h-8 w-8 p-0"
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {isEditingName ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="text-2xl font-bold border-none p-0 h-auto"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName();
+                    if (e.key === 'Escape') handleCancelEdit();
+                  }}
+                />
+                <Button size="sm" onClick={handleSaveName} className="h-8 w-8 p-0">
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 w-8 p-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold">{project.name}</h1>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => setIsEditingName(true)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          {/* Download Report Button */}
+          <Button 
+            onClick={downloadPDFReport}
+            className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download Report
+          </Button>
         </div>
         <p className="text-gray-600">{project.location}, {project.country}</p>
         <p className="text-sm text-gray-500">Coordinates: Lat: 45.1786, Long: -123.121</p>
